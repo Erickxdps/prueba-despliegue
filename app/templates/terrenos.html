@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Lista de Terrenos</h2>
+    {% include 'buscar.html' %}
+    <div class="table-responsive">
+        <table class="table table-hover" id="terrenosTable">
+            <thead class="table-dark">
+                <tr>
+                    <th>Dueño</th>
+                    <th>Lugar</th>
+                    <th>Manzano</th>
+                    <th>Metros Cuadrados</th>
+                    {% if current_user.has_role('admin') %}
+                        <th>Acciones</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for terreno in terrenos %}
+                <tr>
+                    <td>{{ terreno.dueño_id }}</td>
+                    <td>{{ terreno.lugar }}</td>
+                    <td>{{ terreno.manzano }}</td>
+                    <td>{{ terreno.metros_cuadrados }}</td>
+                    {% if current_user.has_role('admin') %}
+                    <td>
+                        <div class="btn-group" role="group">
+                            <a href="{{ url_for('terreno.update_terreno', id=terreno.id) }}" class="btn btn-info btn-sm">Editar</a>
+                            <a href="{{ url_for('terreno.delete_terreno', id=terreno.id) }}" class="btn btn-danger btn-sm">Eliminar</a>
+                        </div>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<script>
+    document.querySelector('.btn-info').setAttribute('onclick', "searchTable('terrenosTable')");
+</script>
+{% endblock %}

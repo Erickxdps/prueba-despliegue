@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card shadow-lg p-4">
+        <h2 class="text-center mb-4">Registrar Reunión</h2>
+        <form method="post" id="reunionForm">
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <label for="descripcion" class="form-label">Descripción:</label>
+                    <input type="text" id="descripcion" name="descripcion" required class="form-control">
+                </div>
+            </div>
+            <div class="row mb-3" id="descripcionInput" style="display: none;">
+                <div class="col-md-12">
+                    <label for="descripcion_editable" class="form-label">Editar Descripción:</label>
+                    <input type="text" id="descripcion_editable" name="descripcion_editable" class="form-control">
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="fecha" class="form-label">Fecha:</label>
+                    <input type="date" id="fecha" name="fecha" required class="form-control">
+                </div>
+                <div class="col-md-6">
+                    <label for="hora" class="form-label">Hora:</label>
+                    <input type="time" id="hora" name="hora" required class="form-control">
+                </div>
+            </div>
+            <div class="text-center">
+                <button type="submit" class="btn btn-primary">Registrar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,100 @@
+/*index*/
+
+.headbar{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 30px;
+}
+.headbar h1{
+    font-weight: 500;
+}
+.index{
+   background-color: #D5F2E3;
+   height: 100%;
+   min-height: 100vh;
+}
+.tabla_duenios{
+    background-color: #BFEDEF;
+    border-radius: 10px;
+}
+.lista{
+    background-color: #BFD7EA;
+}
+.nav{
+    padding: 20px;
+    background-color: #344966;
+    color: #BFD7EA;
+}
+.page{
+    font-weight: 500;
+    font-size: 20px;
+}
+.titulo_principal{
+    font-weight: 500;
+    font-size: 30px;
+}
+
+
+/*login*/
+.divLogin{
+    margin-top: 150px;
+    background-color: #7392B7;
+    padding: 50px;
+    border-radius: 20px;
+}
+.datos{
+    background-color: transparent;
+    border: none;
+    border-bottom: 1px solid white;
+}
+.formulario{
+    padding: 30px;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+}
+.botones{
+    display: flex;
+    margin-top: 40px;
+}
+.pagination{
+    display: flex;
+    gap: 30px;
+}
+/*base*/
+.background{
+    background-color: #2B2D42;
+    min-height: 100vh;
+    padding: 70px 0px 20px 0px;
+    height: 100%;
+}
+.title{
+    color: #BFD7EA;
+    text-align: center;
+    margin-top: 0;
+}
+.navbar2{
+    background-color: #7392B7;
+    width: 100%;
+    margin: 0;
+    padding: 30px;
+}
+
+.subnavbar2{
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    
+}
+.subnavbar2 a{
+    color: inherit;
+    font-weight: 500;
+    font-size: 20px;
+}
+.conteiner h2{
+    color: #BFD7EA;
+}
+.conteiner label{
+    color: #BFD7EA;
+}

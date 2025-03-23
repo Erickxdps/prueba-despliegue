@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5 w-50">
+    <div class="card shadow-lg">
+        <div class="card-header bg-dark text-white text-center">
+            <h2 class="mb-0">Editar Asistencia</h2>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                <!-- Dueño -->
+                <div class="mb-4">
+                    <label for="dueño_id" class="form-label fw-bold">Dueño:</label>
+                    <select id="dueño_id" name="dueño_id" class="form-select" required>
+                        {% for dueño in dueños %}
+                            <option value="{{ dueño.id }}" {% if dueño.id == asistencia.dueño_id %}selected{% endif %}>
+                                {{ dueño.id }} - {{ dueño.nombre }} {{ dueño.paterno }} {{ dueño.materno }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Reunión -->
+                <div class="mb-4">
+                    <label for="id_reunion" class="form-label fw-bold">Reunión:</label>
+                    <select id="id_reunion" name="id_reunion" class="form-select" required>
+                        {% for reunion in reuniones %}
+                            <option value="{{ reunion.id }}" {% if reunion.id == asistencia.id_reunion %}selected{% endif %}>
+                                {{ reunion.id }} - {{ reunion.fecha }} {{ reunion.hora }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Asistió -->
+                <div class="form-check form-switch mb-4">
+                    <input type="checkbox" id="asistio" name="asistio" class="form-check-input" {% if asistencia.asistio %}checked{% endif %}>
+                    <label for="asistio" class="form-check-label">Asistió</label>
+                </div>
+
+                <!-- Botón -->
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-lg">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm p-4">
+                <h2 class="h2 text-center mb-4">Registrar Propietario</h2>
+                <form method="post">
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label">Nombre:</label>
+                        <input type="text" id="nombre" name="nombre" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="paterno" class="form-label">Apellido Paterno:</label>
+                        <input type="text" id="paterno" name="paterno" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="materno" class="form-label">Apellido Materno:</label>
+                        <input type="text" id="materno" name="materno" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="ci" class="form-label">CI:</label>
+                        <input type="number" id="ci" name="ci" class="form-control" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Registrar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

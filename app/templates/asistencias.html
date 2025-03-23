@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Lista de Asistencias</h2>
+    {% include 'buscar.html' %}
+    <div class="table-responsive">
+        <table class="table table-hover" id="asistenciasTable">
+            <thead class="table-dark">
+                <tr>
+                    <th>Dueño</th>
+                    <th>Asistencias</th>
+                    
+                </tr>
+            </thead>
+            <tbody>
+                {% for dueño in dueños %}
+                <tr>
+                    <td>{{ dueño.nombre }} {{ dueño.paterno }} {{ dueño.materno }}</td>
+                    <td>
+                        <button type="button" class="btn btn-info text-white" data-toggle="modal"
+                            data-target="#exampleModal{{dueño.id}}">
+                            Asistencias
+                        </button>
+
+                        <!-- Modal -->
+                        <div class="modal fade" id="exampleModal{{dueño.id}}" tabindex="-1" role="dialog"
+                            aria-labelledby="exampleModalLabel" aria-hidden="true">
+                            <div class="modal-dialog" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header border-secondary">
+                                        <h5 class="modal-title" id="exampleModalLabel">Asistencias</h5>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="container-fluid">
+                                            {% for reunion in reuniones %}
+                                            <div class="row border-bottom py-2">
+                                                <div class="col-md-6">{{ reunion.fecha }} - {{ reunion.hora }}</div>
+                                                {% set asistencia = asistencias | selectattr('dueño_id', 'equalto', dueño.id) | selectattr('id_reunion', 'equalto', reunion.id) | first %}
+                                                <div class="col-md-6">
+                                                    {% if asistencia %}
+                                                    {% if asistencia.asistio %}
+                                                    <span class="badge bg-success">Sí</span>
+                                                    {% else %}
+                                                    <span class="badge bg-danger">No</span>
+                                                    {% endif %}
+                                                    {% else %}
+                                                    <span class="text-muted">-</span>
+                                                    {% endif %}
+                                                </div>
+                                                {% if current_user.has_role('admin') %}
+                                                <div class="col-md-12 mt-2">
+                                                    {% if asistencia %}
+                                                    <a href="{{ url_for('asistencia.update_asistencia', id=asistencia.id) }}"
+                                                        class="btn btn-info btn-sm">Editar</a>
+                                                    <a href="{{ url_for('asistencia.delete_asistencia', id=asistencia.id) }}"
+                                                        class="btn btn-danger btn-sm">Eliminar</a>
+                                                    {% else %}
+                                                    <button class="btn btn-secondary btn-sm" disabled>Editar</button>
+                                                    {% endif %}
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer border-secondary">
+                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

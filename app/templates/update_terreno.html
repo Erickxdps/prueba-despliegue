@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4 w-50">
+    <h2 class="h2 text-primary">Editar Beneficiario</h2>
+    <div class="card shadow-sm p-4">
+        <form method="post">
+            <div class="mb-3">
+                <label for="id_duenio" class="form-label">Dueño ID:</label>
+                <select id="id_duenio" name="id_duenio" required class="form-select">
+                    {% for duenio in dueños %}
+                        <option value="{{ duenio.id }}" {% if duenio.id == terreno.dueño_id %}selected{% endif %}>
+                            {{ duenio.id }} - {{ duenio.nombre }} {{ duenio.paterno }} {{ duenio.materno }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="lugar" class="form-label">Lugar:</label>
+                <input type="text" id="lugar" name="lugar" required class="form-control" value="{{ terreno.lugar }}">
+            </div>
+            <div class="mb-3">
+                <label for="manzano" class="form-label">Manzano:</label>
+                <input type="text" id="manzano" name="manzano" required class="form-control" value="{{ terreno.manzano }}">
+            </div>
+            <div class="mb-3">
+                <label for="metros_cuadrados" class="form-label">Metros Cuadrados:</label>
+                <input type="text" id="metros_cuadrados" name="metros_cuadrados" required class="form-control" value="{{ terreno.metros_cuadrados }}">
+            </div>
+            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

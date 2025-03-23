@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card shadow-lg p-4">
+        <h2 class="text-center mb-4">Registrar Terreno</h2>
+        <form method="post">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="dueño_id" class="form-label">Dueño:</label>
+                    <input type="text" id="searchDueño" class="form-control mb-2" placeholder="Buscar dueño...">
+                    <select id="dueño_id" name="dueño_id" class="form-select" required>
+                        {% for dueño in dueños %}
+                        <option value="{{ dueño.id }}">{{ dueño.id }} - {{ dueño.nombre }} {{ dueño.paterno }} {{
+                            dueño.materno }} {{dueño.ci}}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="lugar" class="form-label">Numero De Lote:</label>
+                    <input type="text" id="lugar" name="lugar" required class="form-control">
+                </div>
+                <div class="col-md-6">
+                    <label for="manzano" class="form-label">Manzano:</label>
+                    <input type="number" id="manzano" name="manzano" required class="form-control">
+                </div>
+                <div class="col-md-6">
+                    <label for="metros_cuadrados" class="form-label">Metros Cuadrados:</label>
+                    <input type="number" id="metros_cuadrados" name="metros_cuadrados" step="0.01" required class="form-control">
+                </div>
+            </div>
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary">Registrar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.getElementById('searchDueño').addEventListener('keyup', function() {
+        var filter = this.value.toLowerCase();
+        var options = document.getElementById('dueño_id').options;
+        for (var i = 0; i < options.length; i++) {
+            var option = options[i];
+            var text = option.text.toLowerCase();
+            option.style.display = text.includes(filter) ? '' : 'none';
+        }
+    });
+</script>
+{% endblock %}

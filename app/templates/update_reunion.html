@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card shadow-lg p-4">
+        <h2 class="text-center mb-4">Editar Reunión</h2>
+        <form method="post">
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="descripcion" class="form-label">Descripcion:</label>
+                    <input type="text" id="descripcion" name="descripcion" class="form-control" value="{{ reunion.descripcion }}"
+                        required>
+                </div>
+                <div class="col-md-6">
+                    <label for="fecha" class="form-label">Fecha:</label>
+                    <input type="date" id="fecha" name="fecha" class="form-control" value="{{ reunion.fecha }}"
+                        required>
+                </div>
+                <div class="col-md-6">
+                    <label for="hora" class="form-label">Hora:</label>
+                    <input type="time" id="hora" name="hora" class="form-control" value="{{ reunion.hora }}" required>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
