@@ -4,8 +4,8 @@ class Duenio(db.Model):
     __tablename__ = "Duenio"
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(50), nullable=False)
-    paterno = db.Column(db.String(50), nullable=False)
-    materno = db.Column(db.String(50), nullable=False)
+    paterno = db.Column(db.String(50), nullable=True)
+    materno = db.Column(db.String(50), nullable=True)
     ci = db.Column(db.String(20), unique=True, nullable=False)
     multas = db.relationship('Multa', backref='duenio', lazy=True)  # Relación con la tabla Multa
 
