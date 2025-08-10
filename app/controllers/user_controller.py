@@ -26,6 +26,8 @@ def index():
     # Datos adicionales
     asistencias = Asistencia.query.all()
     terrenos = Terreno.query.all()
+    # Cargar cuotas con las relaciones necesarias
+    cuotas = Cuota.query.join(Terreno).join(Duenio).all()
     
     def multas(multas_list):
         total = 0
@@ -40,6 +42,7 @@ def index():
                          cuotas_count=cuotas_count,
                          asistencias=asistencias, 
                          terrenos=terrenos, 
+                         cuotas=cuotas,  # Pasar las cuotas a la vista
                          multas=multas)
 
 # lista usuarios

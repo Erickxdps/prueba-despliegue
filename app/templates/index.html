@@ -169,6 +169,7 @@
                             <th><i class="fas fa-id-card me-2"></i>CI</th>
                             <th><i class="fas fa-calendar-check me-2"></i>Asistencias</th>
                             <th><i class="fas fa-map-marker-alt me-2"></i>Terrenos</th>
+                            <th><i class="fas fa-money-bill-wave me-2"></i>Cuotas</th>
                             <th><i class="fas fa-exclamation-triangle me-2"></i>Multas</th>
                         </tr>
                     </thead>
@@ -206,6 +207,12 @@
                                         <button type="button" class="btn btn-success btn-sm action-btn"
                                                 data-bs-toggle="modal" data-bs-target="#terrenos{{ asistencia.dueno.id }}">
                                             <i class="fas fa-map me-1"></i>Ver Terrenos
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-warning btn-sm action-btn"
+                                                data-bs-toggle="modal" data-bs-target="#cuotas{{ asistencia.dueno.id }}">
+                                            <i class="fas fa-money-bill-wave me-1"></i>Ver Cuotas
                                         </button>
                                     </td>
                                     <td>
@@ -323,6 +330,105 @@
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                             <i class="fas fa-times me-1"></i>Cerrar
                         </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Cuotas -->
+        <div class="modal fade" id="cuotas{{ asistencia.dueno.id }}" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content glass-card">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-money-bill-wave me-2"></i>
+                            Cuotas - {{ asistencia.dueno.nombre }} {{ asistencia.dueno.paterno }}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-4"><strong>Título/Concepto</strong></div>
+                            <div class="col-md-2"><strong>Terreno</strong></div>
+                            <div class="col-md-2"><strong>Monto</strong></div>
+                            <div class="col-md-2"><strong>Estado</strong></div>
+                            <div class="col-md-2"><strong>Fecha Creación</strong></div>
+                        </div>
+                        <hr>
+                        {% set cuotas_encontradas = false %}
+                        {% for cuota in cuotas %}
+                            {% if cuota.terreno and cuota.terreno.dueno and cuota.terreno.dueno.id == asistencia.dueno.id %}
+                                {% set cuotas_encontradas = true %}
+                                <div class="row g-3 py-3 border-bottom">
+                                    <div class="col-md-4">
+                                        <span class="badge bg-info">{{ cuota.titulo }}</span>
+                                        {% if cuota.descripcion %}
+                                            <br><small class="text-muted">{{ cuota.descripcion[:50] }}...</small>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-2">
+                                        <span class="badge bg-primary">{{ cuota.terreno.lugar }}</span>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <strong class="text-primary">Bs. {{ cuota.monto }}</strong>
+                                    </div>
+                                    <div class="col-md-2">
+                                        {% if cuota.pagado %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>Pagado
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times me-1"></i>Pendiente
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-2">
+                                        {% if cuota.fecha_creacion %}
+                                            <span class="text-muted">{{ cuota.fecha_creacion.strftime('%d/%m/%Y') }}</span>
+                                        {% else %}
+                                            <span class="text-muted">Sin fecha</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if not cuotas_encontradas %}
+                            <div class="text-center py-4">
+                                <div class="text-muted">
+                                    <i class="fas fa-info-circle fa-2x mb-2"></i>
+                                    <p>No hay cuotas registradas para este propietario</p>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="modal-footer">
+                        {% set total_pendiente = 0 %}
+                        {% set total_pagado = 0 %}
+                        {% for cuota in cuotas %}
+                            {% if cuota.terreno and cuota.terreno.dueno and cuota.terreno.dueno.id == asistencia.dueno.id %}
+                                {% if cuota.pagado %}
+                                    {% set total_pagado = total_pagado + cuota.monto %}
+                                {% else %}
+                                    {% set total_pendiente = total_pendiente + cuota.monto %}
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                        
+                        <div class="d-flex justify-content-between align-items-center w-100">
+                            <div class="cuotas-summary">
+                                <small class="text-muted me-3">
+                                    <i class="fas fa-check-circle text-success me-1"></i>Pagado: <strong>Bs. {{ total_pagado }}</strong>
+                                </small>
+                                <small class="text-muted">
+                                    <i class="fas fa-exclamation-circle text-danger me-1"></i>Pendiente: <strong>Bs. {{ total_pendiente }}</strong>
+                                </small>
+                            </div>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                <i class="fas fa-times me-1"></i>Cerrar
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
