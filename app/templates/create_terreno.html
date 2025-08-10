@@ -2,44 +2,97 @@
 
 {% block content %}
 <div class="container mt-5">
-    <div class="card shadow-lg p-4">
-        <h2 class="text-center mb-4">Registrar Terreno</h2>
-        <form method="post">
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <label for="dueño_id" class="form-label">Dueño:</label>
-                    <input type="text" id="searchDueño" class="form-control mb-2" placeholder="Buscar dueño...">
-                    <select id="dueño_id" name="dueño_id" class="form-select" required>
-                        {% for dueño in dueños %}
-                        <option value="{{ dueño.id }}">{{ dueño.id }} - {{ dueño.nombre }} {{ dueño.paterno }} {{
-                            dueño.materno }} {{dueño.ci}}</option>
-                        {% endfor %}
-                    </select>
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow-lg">
+                <div class="card-header bg-info text-white py-3">
+                    <h2 class="card-title mb-0 text-center">
+                        <i class="fas fa-map"></i> Registrar Nuevo Terreno
+                    </h2>
                 </div>
-                <div class="col-md-6">
-                    <label for="lugar" class="form-label">Numero De Lote:</label>
-                    <input type="text" id="lugar" name="lugar" required class="form-control">
-                </div>
-                <div class="col-md-6">
-                    <label for="manzano" class="form-label">Manzano:</label>
-                    <input type="number" id="manzano" name="manzano" required class="form-control">
-                </div>
-                <div class="col-md-6">
-                    <label for="metros_cuadrados" class="form-label">Metros Cuadrados:</label>
-                    <input type="number" id="metros_cuadrados" name="metros_cuadrados" step="0.01" required class="form-control">
+                <div class="card-body p-4">
+                    <form method="post">
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <label for="duenio_id" class="form-label">
+                                    <i class="fas fa-user"></i> Propietario
+                                </label>
+                                <input type="text" id="searchDueño" class="form-control mb-2" 
+                                       placeholder="🔍 Buscar propietario por nombre o CI...">
+                                <select id="duenio_id" name="duenio_id" class="form-select form-select-lg" required>
+                                    <option value="">Seleccione un propietario...</option>
+                                    {% for duenio in duenios %}
+                                    <option value="{{ duenio.id }}">
+                                        {{ duenio.nombre }} {{ duenio.paterno }} {{ duenio.materno }} - CI: {{ duenio.ci }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <small class="form-text text-muted">
+                                    Seleccione el propietario del terreno. Use el campo de búsqueda para filtrar.
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label for="lugar" class="form-label">
+                                    <i class="fas fa-map-marker-alt"></i> Número de Lote
+                                </label>
+                                <input type="text" id="lugar" name="lugar" required class="form-control form-control-lg"
+                                       placeholder="Ej: A-12, Lote 15, etc.">
+                                <small class="form-text text-muted">
+                                    Identificador único del lote o terreno
+                                </small>
+                            </div>
+
+                            <div class="col-md-6 mb-4">
+                                <label for="manzano" class="form-label">
+                                    <i class="fas fa-th-large"></i> Manzano
+                                </label>
+                                <input type="number" id="manzano" name="manzano" required class="form-control form-control-lg"
+                                       placeholder="Ej: 1, 2, 3..." min="1">
+                                <small class="form-text text-muted">
+                                    Número del manzano donde se ubica el terreno
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <label for="metros_cuadrados" class="form-label">
+                                    <i class="fas fa-ruler-combined"></i> Superficie
+                                </label>
+                                <div class="input-group input-group-lg">
+                                    <input type="number" id="metros_cuadrados" name="metros_cuadrados" 
+                                           step="0.01" min="0" required class="form-control"
+                                           placeholder="0.00">
+                                    <span class="input-group-text">m²</span>
+                                </div>
+                                <small class="form-text text-muted">
+                                    Superficie del terreno en metros cuadrados (acepta decimales)
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('terreno.list_terrenos') }}" class="btn btn-outline-secondary me-md-2">
+                                <i class="fas fa-arrow-left"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-info">
+                                <i class="fas fa-save"></i> Registrar Terreno
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
-            <div class="d-grid gap-2">
-                <button type="submit" class="btn btn-primary">Registrar</button>
-            </div>
-        </form>
+        </div>
     </div>
 </div>
 
 <script>
     document.getElementById('searchDueño').addEventListener('keyup', function() {
         var filter = this.value.toLowerCase();
-        var options = document.getElementById('dueño_id').options;
+        var options = document.getElementById('duenio_id').options;
         for (var i = 0; i < options.length; i++) {
             var option = options[i];
             var text = option.text.toLowerCase();
@@ -47,4 +100,70 @@
         }
     });
 </script>
+
+<style>
+    .card {
+        border-radius: 0.5rem;
+        border: none;
+    }
+    
+    .card-header {
+        border-radius: 0.5rem 0.5rem 0 0 !important;
+        border-bottom: none;
+        background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%) !important;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #17a2b8;
+        box-shadow: 0 0 0 0.2rem rgba(23, 162, 184, 0.25);
+    }
+    
+    .btn-info {
+        background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%);
+        border: none;
+        padding: 0.6rem 1.5rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-info:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
+        background: linear-gradient(135deg, #138496 0%, #1e7e34 100%);
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-text {
+        font-size: 0.8rem;
+    }
+    
+    .input-group-text {
+        background-color: #17a2b8;
+        color: white;
+        border: none;
+        font-weight: 600;
+    }
+    
+    #searchDueño {
+        border-bottom: 2px solid #17a2b8;
+        border-radius: 0.375rem 0.375rem 0 0;
+        background-color: #f8f9fa;
+    }
+    
+    #duenio_id {
+        border-top: 1px solid #dee2e6;
+        border-radius: 0 0 0.375rem 0.375rem;
+    }
+    
+    #searchDueño:focus {
+        background-color: white;
+        border-color: #17a2b8;
+        box-shadow: 0 0 0 0.2rem rgba(23, 162, 184, 0.25);
+    }
+</style>
 {% endblock %}

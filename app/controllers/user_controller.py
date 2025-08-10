@@ -6,19 +6,41 @@ from views import user_view
 from models.user_model import User
 from models.asistencia_model import Asistencia
 from models.terreno_model import Terreno
+from models.duenio_model import Duenio
+from models.reunion_model import Reunion
+from models.cuota_model import Cuota
 
 user_bp = Blueprint("user", __name__)
 
 @user_bp.route('/')
 def index():
+    # Obtener conteos para las estadísticas
+    duenos_count = Duenio.query.count()
+    terrenos_count = Terreno.query.count()
+    reuniones_count = Reunion.query.count()
+    
+    # Para cuotas, contar solo tipos únicos de cuotas (no repetir por propietario)
+    cuotas_titulos = Cuota.query.with_entities(Cuota.titulo).distinct().all()
+    cuotas_count = len(cuotas_titulos)
+    
+    # Datos adicionales
     asistencias = Asistencia.query.all()
     terrenos = Terreno.query.all()
-    def multas_total(multas):
+    
+    def multas(multas_list):
         total = 0
-        for multa in multas:
+        for multa in multas_list:
             total += multa.monto
         return total
-    return render_template('index.html', asistencias=asistencias, terrenos=terrenos,multas=multas_total)
+    
+    return render_template('index.html', 
+                         duenos_count=duenos_count,
+                         terrenos_count=terrenos_count, 
+                         reuniones_count=reuniones_count,
+                         cuotas_count=cuotas_count,
+                         asistencias=asistencias, 
+                         terrenos=terrenos, 
+                         multas=multas)
 
 # lista usuarios
 @user_bp.route("/users")
@@ -42,7 +64,7 @@ def login():
             else:
                 return redirect(url_for("user.profile", id=user.id))
         else:
-            flash("Nombre de usuario o contraseña incorrectos", "error")
+            flash("Nombre de usuario o contrasenia incorrectos", "error")
     return user_view.login()
 
 # cierra sesion
@@ -65,7 +87,6 @@ def create_user():
             flash("El nombre de usuario ya está en uso", "error")
             return redirect(url_for("user.create_user"))
         user = User(username, password, role=role)
-        user.set_password(password)
         user.save()
         flash("Usuario registrado exitosamente", "success")
         return redirect(url_for("user.list_users"))

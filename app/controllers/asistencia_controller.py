@@ -3,78 +3,98 @@ from flask_login import login_required, current_user
 from models.asistencia_model import Asistencia
 from models.duenio_model import Duenio
 from models.reunion_model import Reunion
-from models.terreno_model import Terreno
-from models.multa_model import Multa  # Importar el modelo Multa
-from sqlalchemy.exc import IntegrityError  # Importar IntegrityError
+from models.multa_model import Multa
 from views import asistencia_view
-from database import db
-
-# Importamos el decorador de roles
 from utils.decorators import role_required
 
 asistencia_bp = Blueprint("asistencia", __name__)
 
-
 # Ruta para obtener la lista de asistencias
 @asistencia_bp.route("/asistencias")
+@login_required
 def list_asistencias():
     asistencias = Asistencia.get_all()
-    dueños = Duenio.get_all()
-    reuniones = Reunion.get_all()
-    terrenos=Terreno.get_all()
-    return render_template('asistencias.html', asistencias=asistencias, dueños=dueños, reuniones=reuniones,terrenos=terrenos)
+    return asistencia_view.list_asistencias(asistencias)
 
-# Ruta para crear asistencias
+# Ruta para crear asistencias (manual, raramente usada)
 @asistencia_bp.route("/asistencias/create", methods=["GET", "POST"])
 @login_required
 @role_required("admin")
 def create_asistencia():
     if request.method == "POST":
         if current_user.has_role("admin"):
-            dueño_id = request.form.get("dueño_id")
-            id_reunion = request.form.get("id_reunion")
-            asistio = request.form.get("asistio")
-            if asistio == "on":
-                asistio = True
+            duenio_id = request.form["duenio_id"]
+            id_reunion = request.form["id_reunion"]
+            asistio = 'asistio' in request.form  # Procesar el checkbox
+            
+            # Verificar si ya existe una asistencia para este dueño y reunión
+            asistencia_existente = Asistencia.query.filter_by(
+                duenio_id=duenio_id, 
+                id_reunion=id_reunion
+            ).first()
+            
+            if asistencia_existente:
+                # Actualizar asistencia existente
+                asistencia_existente.update(asistio=asistio)
+                reunion = Reunion.query.get(id_reunion)
+                gestionar_multa_asistencia(asistencia_existente, asistio, reunion)
+                
+                if asistio:
+                    flash("Asistencia actualizada: Presente. Multa eliminada.", "success")
+                else:
+                    flash("Asistencia actualizada: Ausente. Multa aplicada.", "warning")
             else:
-                asistio = False
-            asistencia = Asistencia(dueño_id=dueño_id, id_reunion=id_reunion, asistio=asistio)
-            try:
+                # Crear nueva asistencia
+                asistencia = Asistencia(duenio_id=duenio_id, id_reunion=id_reunion, asistio=asistio)
                 asistencia.save()
-                flash("Asistencia creada exitosamente", "success")
-            except IntegrityError:
-                db.session.rollback()
-                flash("Ya existe una asistencia para esta reunión y dueño", "error")
+                
+                # Obtener reunión para gestionar multas correctamente
+                reunion = Reunion.query.get(id_reunion)
+                
+                # Gestionar multa según asistencia
+                gestionar_multa_asistencia(asistencia, asistio, reunion)
+                
+                if asistio:
+                    flash("Asistencia registrada: Presente. Sin multa.", "success")
+                else:
+                    flash("Asistencia registrada: Ausente. Multa aplicada.", "warning")
+            
             return redirect(url_for("asistencia.list_asistencias"))
         else:
             return jsonify({"message": "Unauthorized"}), 403
     
-    dueños = Duenio.query.all()
+    duenios = Duenio.query.all()
     reuniones = Reunion.query.all()
-    return render_template('create_asistencia.html', dueños=dueños, reuniones=reuniones)
+    return asistencia_view.create_asistencia(duenios, reuniones)
 
 # Ruta para actualizar asistencias por ID
 @asistencia_bp.route("/asistencias/<int:id>/update", methods=["GET", "POST"])
 @login_required
 @role_required("admin")
 def update_asistencia(id):
-    asistencia = Asistencia.get_by_id(id)
+    asistencia = Asistencia.query.get(id)
     if not asistencia:
         return "Asistencia no encontrada", 404
+    
     if request.method == "POST":
         if current_user.has_role("admin"):
-            dueño_id = request.form["dueño_id"]
-            id_reunion = request.form["id_reunion"]
-            asistio = request.form.get("asistio") == 'on'
-            asistencia.update(dueño_id=dueño_id, id_reunion=id_reunion, asistio=asistio)
+            # Manejar tanto checkbox HTML como valor JavaScript
+            asistio_value = request.form.get("asistio")
+            asistio = asistio_value in ['true', 'on', True] or 'asistio' in request.form
+            
+            # Actualizar asistencia
+            asistencia.update(asistio=asistio)
+            
+            # Gestionar multa según asistencia
+            reunion = Reunion.query.get(asistencia.id_reunion)
+            gestionar_multa_asistencia(asistencia, asistio, reunion)
+            
             flash("Asistencia actualizada exitosamente", "success")
             return redirect(url_for("asistencia.list_asistencias"))
         else:
             return jsonify({"message": "Unauthorized"}), 403
     
-    dueños = Duenio.query.all()
-    reuniones = Reunion.query.all()
-    return render_template('update_asistencia.html', asistencia=asistencia, dueños=dueños, reuniones=reuniones)
+    return asistencia_view.update_asistencia(asistencia)
 
 # Ruta para eliminar asistencias por ID
 @asistencia_bp.route("/asistencias/<int:id>/delete")
@@ -84,9 +104,91 @@ def delete_asistencia(id):
     asistencia = Asistencia.get_by_id(id)
     if not asistencia:
         return "Asistencia no encontrada", 404
+    
     if current_user.has_role("admin"):
+        # Eliminar multa asociada antes de eliminar asistencia
+        eliminar_multa_asistencia(asistencia)
         asistencia.delete()
         flash("Asistencia eliminada exitosamente", "success")
         return redirect(url_for("asistencia.list_asistencias"))
     else:
         return jsonify({"message": "Unauthorized"}), 403
+
+# Ruta para marcar asistencia específica
+@asistencia_bp.route("/asistencias/marcar", methods=["POST"])
+@login_required
+@role_required("admin")
+def marcar_asistencia():
+    duenio_id = request.form["duenio_id"]
+    id_reunion = request.form["id_reunion"]
+    asistio = request.form.get("asistio") == "true"
+    
+    asistencia = Asistencia.query.filter_by(duenio_id=duenio_id, id_reunion=id_reunion).first()
+    if asistencia:
+        asistencia.update(asistio=asistio)
+        reunion = Reunion.query.get(asistencia.id_reunion)
+        gestionar_multa_asistencia(asistencia, asistio, reunion)
+        flash("Asistencia marcada exitosamente", "success")
+    else:
+        flash("Asistencia no encontrada", "error")
+    
+    return redirect(url_for("asistencia.list_asistencias"))
+
+# Funciones auxiliares para gestión de multas
+def crear_multa_asistencia(asistencia, monto_multa):
+    """Crear multa para asistencia"""
+    print(f"[DEBUG] Intentando crear multa - Dueño: {asistencia.duenio_id}, Reunión: {asistencia.id_reunion}, Monto: {monto_multa}")
+    
+    multa_existente = Multa.query.filter_by(
+        duenio_id=asistencia.duenio_id,
+        reunion_id=asistencia.id_reunion,
+        tipo='asistencia'
+    ).first()
+    
+    if not multa_existente:
+        try:
+            multa = Multa(
+                duenio_id=asistencia.duenio_id,
+                reunion_id=asistencia.id_reunion,
+                monto=monto_multa,
+                tipo='asistencia',
+                descripcion=f'Multa por no asistir a reunión {asistencia.id_reunion}'
+            )
+            multa.save()
+            print(f"[DEBUG] Multa creada exitosamente - ID: {multa.multa_id}")
+        except Exception as e:
+            print(f"[ERROR] Error al crear multa: {e}")
+            raise e
+    else:
+        print(f"[DEBUG] Ya existe multa para este dueño y reunión")
+
+def gestionar_multa_asistencia(asistencia, asistio, reunion):
+    """Gestionar multa según estado de asistencia"""
+    print(f"[DEBUG] Gestionando multa - Dueño: {asistencia.duenio_id}, Asistió: {asistio}, Reunión: {reunion.id if reunion else 'None'}")
+    
+    multa = Multa.query.filter_by(
+        duenio_id=asistencia.duenio_id,
+        reunion_id=asistencia.id_reunion,
+        tipo='asistencia'
+    ).first()
+    
+    if asistio and multa:
+        # Si asistió, eliminar multa
+        print(f"[DEBUG] Asistió - Eliminando multa existente ID: {multa.multa_id}")
+        multa.delete()
+    elif not asistio and not multa and reunion and reunion.monto_multa > 0:
+        # Si no asistió y no hay multa, crear multa
+        print(f"[DEBUG] No asistió - Creando nueva multa")
+        crear_multa_asistencia(asistencia, reunion.monto_multa)
+    else:
+        print(f"[DEBUG] Sin cambios - Asistió: {asistio}, Multa existe: {multa is not None}")
+
+def eliminar_multa_asistencia(asistencia):
+    """Eliminar multa asociada a asistencia"""
+    multa = Multa.query.filter_by(
+        duenio_id=asistencia.duenio_id,
+        reunion_id=asistencia.id_reunion,
+        tipo='asistencia'
+    ).first()
+    if multa:
+        multa.delete()

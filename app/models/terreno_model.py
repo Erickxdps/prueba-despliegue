@@ -3,15 +3,15 @@ from database import db
 class Terreno(db.Model):
     __tablename__ = "Terreno"
     id = db.Column(db.Integer, primary_key=True)
-    dueño_id = db.Column(db.Integer, db.ForeignKey('Duenio.id'), nullable=False)
+    duenio_id = db.Column(db.Integer, db.ForeignKey('Duenio.id'), nullable=False)
     lugar = db.Column(db.String(100), nullable=False)
     manzano = db.Column(db.Integer, nullable=False)
     metros_cuadrados = db.Column(db.Integer, nullable=False)
     dueno = db.relationship('Duenio', backref='terrenos')
 
 
-    def __init__(self, dueño_id, lugar, manzano, metros_cuadrados):
-        self.dueño_id = dueño_id
+    def __init__(self, duenio_id, lugar, manzano, metros_cuadrados):
+        self.duenio_id = duenio_id
         self.lugar = lugar
         self.manzano = manzano
         self.metros_cuadrados = metros_cuadrados
@@ -28,9 +28,9 @@ class Terreno(db.Model):
     def get_by_id(id):
         return Terreno.query.get(id)
 
-    def update(self, dueño_id=None, lugar=None, manzano=None, metros_cuadrados=None):
-        if dueño_id is not None:
-            self.dueño_id = dueño_id
+    def update(self, duenio_id=None, lugar=None, manzano=None, metros_cuadrados=None):
+        if duenio_id is not None:
+            self.duenio_id = duenio_id
         if lugar is not None:
             self.lugar = lugar
         if manzano is not None:

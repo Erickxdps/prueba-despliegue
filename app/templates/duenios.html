@@ -1,53 +1,188 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container mt-5">
-
-    <h2 class="text-center mb-4">Lista de Beneficiarios</h2>
-
-    {% include 'buscar.html' %}
-
-    <div class="table-responsive">
-        <table class="table table-hover" id="dueniosTable">
-            <thead class="table-dark">
-                <tr>
-                    <th>Nombre</th>
-                    <th>Apellido Paterno</th>
-                    <th>Apellido Materno</th>
-                    <th>CI</th>
-                    <th>Multas</th>
-                    {% if current_user.has_role('admin') %}
-                    <th>Acciones</th>
-                    {% endif %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for duenio in duenios %}
-                <tr>
-                    <td>{{ duenio.nombre }}</td>
-                    <td>{{ duenio.paterno }}</td>
-                    <td>{{ duenio.materno }}</td>
-                    <td>{{ duenio.ci }}</td>
-                    <td>
-                        {% for multa in duenio.multas %}
-                        <li>Reunión: {{ multa.id_reunion }}, Monto: {{ multa.monto }}</li>
-                        {% endfor %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="fas fa-users"></i> Gestión de Beneficiarios
+                        </h4>
                         {% if current_user.has_role('admin') %}
-                    <td>
-                        <div class="d-flex gap-2">
-                            <a href="{{ url_for('duenio.update_duenio', id=duenio.id) }}"
-                                class="btn btn-info btn-sm">Editar</a>
-                            <a href="{{ url_for('duenio.delete_duenio', id=duenio.id) }}"
-                                class="btn btn-danger btn-sm">Eliminar</a>
+                        <a href="{{ url_for('duenio.create_duenio') }}" class="btn btn-light btn-sm">
+                            <i class="fas fa-plus"></i> Nuevo Beneficiario
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% include 'buscar.html' %}
+                    
+                    <!-- Estadísticas de beneficiarios -->
+                    {% if duenios %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6><i class="fas fa-chart-bar"></i> Estadísticas</h6>
+                            <div class="row">
+                                {% set total_duenios = duenios|length %}
+                                {% set duenios_con_multas = duenios|selectattr("multas")|list|length %}
+                                {% set duenios_sin_multas = total_duenios - duenios_con_multas %}
+                                
+                                <div class="col-md-4 mb-3">
+                                    <div class="card border-info">
+                                        <div class="card-body text-center">
+                                            <h5 class="text-info">
+                                                <i class="fas fa-users"></i> Total
+                                            </h5>
+                                            <h3 class="text-info">{{ total_duenios }}</h3>
+                                            <small class="text-muted">Beneficiarios registrados</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <div class="card border-success">
+                                        <div class="card-body text-center">
+                                            <h5 class="text-success">
+                                                <i class="fas fa-check-circle"></i> Al día
+                                            </h5>
+                                            <h3 class="text-success">{{ duenios_sin_multas }}</h3>
+                                            <small class="text-muted">Sin multas pendientes</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <div class="card border-warning">
+                                        <div class="card-body text-center">
+                                            <h5 class="text-warning">
+                                                <i class="fas fa-exclamation-triangle"></i> Con multas
+                                            </h5>
+                                            <h3 class="text-warning">{{ duenios_con_multas }}</h3>
+                                            <small class="text-muted">Tienen multas pendientes</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </td>
+                    </div>
                     {% endif %}
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover" id="dueniosTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Beneficiario</th>
+                                    <th>CI</th>
+                                    <th>Estado</th>
+                                    <th>Multas</th>
+                                    {% if current_user.has_role('admin') %}
+                                    <th>Acciones</th>
+                                    {% endif %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for duenio in duenios %}
+                                <tr>
+                                    <td><strong>#{{ duenio.id }}</strong></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="me-2">
+                                                {% if duenio.multas %}
+                                                    <i class="fas fa-user-times text-warning"></i>
+                                                {% else %}
+                                                    <i class="fas fa-user-check text-success"></i>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <strong>{{ duenio.nombre }} {{ duenio.paterno }}</strong>
+                                                <br><small class="text-muted">{{ duenio.materno }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-id-card"></i> {{ duenio.ci }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if duenio.multas %}
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-exclamation-triangle"></i> Con multas
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check-circle"></i> Al día
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if duenio.multas %}
+                                            {% for multa in duenio.multas %}
+                                                <small class="d-block">
+                                                    <i class="fas fa-exclamation-circle text-warning"></i>
+                                                    Reunión #{{ multa.id_reunion }} - Bs. {{ "%.2f"|format(multa.monto) }}
+                                                </small>
+                                            {% endfor %}
+                                        {% else %}
+                                            <span class="text-muted">
+                                                <i class="fas fa-check"></i> Sin multas
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    {% if current_user.has_role('admin') %}
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('duenio.update_duenio', id=duenio.id) }}" 
+                                               class="btn btn-info btn-sm">
+                                                <i class="fas fa-edit"></i> Editar
+                                            </a>
+                                            <form method="post" action="{{ url_for('duenio.delete_duenio', id=duenio.id) }}" style="display: inline;">
+                                                <button type="submit" class="btn btn-danger btn-sm"
+                                                        onclick="return confirm('¿Está seguro de eliminar a {{ duenio.nombre }} {{ duenio.paterno }}?')">
+                                                    <i class="fas fa-trash"></i> Eliminar
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">
+                                        <i class="fas fa-inbox"></i> No hay beneficiarios registrados
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<style>
+.table-hover tbody tr:hover {
+    background-color: rgba(40, 167, 69, 0.1);
+}
+
+.btn-group .btn {
+    margin-right: 2px;
+}
+
+.card-header {
+    border-bottom: 3px solid rgba(255, 255, 255, 0.2);
+}
+
+.badge {
+    font-size: 0.75em;
+}
+</style>
 
 <script>
     document.querySelector('.btn-info').setAttribute('onclick', "searchTable('dueniosTable')");

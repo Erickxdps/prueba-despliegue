@@ -1,29 +1,23 @@
 from database import db
 from datetime import date, time
-from models.duenio_model import Duenio
-from models.asistencia_model import Asistencia
-from models.multa_model import Multa  # Importar el modelo Multa
 
 class Reunion(db.Model):
-    __tablename__ = "Reuniones"
+    __tablename__ = "Reunion"
     id = db.Column(db.Integer, primary_key=True)
     fecha = db.Column(db.Date, nullable=False)
     hora = db.Column(db.Time, nullable=False)
-    descripcion = db.Column(db.String(255), nullable=True)  # Nuevo campo
+    descripcion = db.Column(db.String(255), nullable=True)
+    monto_multa = db.Column(db.Float, nullable=False, default=100.0)  # ✅ NUEVO ATRIBUTO
 
-    def __init__(self, fecha, hora, descripcion=None):
+    def __init__(self, fecha, hora, descripcion=None, monto_multa=100.0):
         self.fecha = fecha
         self.hora = hora
         self.descripcion = descripcion
+        self.monto_multa = monto_multa
 
     def save(self):
         db.session.add(self)
         db.session.commit()
-        # Crear registros de asistencia para todos los dueños
-        dueños = Duenio.query.all()
-        for dueño in dueños:
-            asistencia = Asistencia(dueño_id=dueño.id, id_reunion=self.id, asistio=True)
-            asistencia.save()
 
     @staticmethod
     def get_all():
@@ -33,18 +27,17 @@ class Reunion(db.Model):
     def get_by_id(id):
         return Reunion.query.get(id)
 
-    def update(self, fecha=None, hora=None, descripcion=None):
+    def update(self, fecha=None, hora=None, descripcion=None, monto_multa=None):
         if fecha is not None:
             self.fecha = fecha
         if hora is not None:
             self.hora = hora
         if descripcion is not None:
             self.descripcion = descripcion
+        if monto_multa is not None:
+            self.monto_multa = monto_multa
         db.session.commit()
 
     def delete(self):
-        # Eliminar todas las asistencias y multas asociadas a esta reunión
-        Asistencia.query.filter_by(id_reunion=self.id).delete()
-        Multa.query.filter_by(id_reunion=self.id).delete()
         db.session.delete(self)
         db.session.commit()

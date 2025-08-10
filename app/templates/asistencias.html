@@ -1,80 +1,389 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container mt-5">
-    <h2 class="text-center mb-4">Lista de Asistencias</h2>
-    {% include 'buscar.html' %}
-    <div class="table-responsive">
-        <table class="table table-hover" id="asistenciasTable">
-            <thead class="table-dark">
-                <tr>
-                    <th>Dueño</th>
-                    <th>Asistencias</th>
-                    
-                </tr>
-            </thead>
-            <tbody>
-                {% for dueño in dueños %}
-                <tr>
-                    <td>{{ dueño.nombre }} {{ dueño.paterno }} {{ dueño.materno }}</td>
-                    <td>
-                        <button type="button" class="btn btn-info text-white" data-toggle="modal"
-                            data-target="#exampleModal{{dueño.id}}">
-                            Asistencias
-                        </button>
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="fas fa-user-check"></i> Gestión de Asistencias
+                        </h4>
+                        {% if current_user.has_role('admin') %}
+                        <a href="{{ url_for('asistencia.create_asistencia') }}" class="btn btn-light btn-sm">
+                            <i class="fas fa-plus"></i> Nueva Asistencia
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% include 'buscar.html' %}
 
-                        <!-- Modal -->
-                        <div class="modal fade" id="exampleModal{{dueño.id}}" tabindex="-1" role="dialog"
-                            aria-labelledby="exampleModalLabel" aria-hidden="true">
-                            <div class="modal-dialog" role="document">
-                                <div class="modal-content">
-                                    <div class="modal-header border-secondary">
-                                        <h5 class="modal-title" id="exampleModalLabel">Asistencias</h5>
-                                    </div>
-                                    <div class="modal-body">
-                                        <div class="container-fluid">
-                                            {% for reunion in reuniones %}
-                                            <div class="row border-bottom py-2">
-                                                <div class="col-md-6">{{ reunion.fecha }} - {{ reunion.hora }}</div>
-                                                {% set asistencia = asistencias | selectattr('dueño_id', 'equalto', dueño.id) | selectattr('id_reunion', 'equalto', reunion.id) | first %}
-                                                <div class="col-md-6">
-                                                    {% if asistencia %}
-                                                    {% if asistencia.asistio %}
-                                                    <span class="badge bg-success">Sí</span>
-                                                    {% else %}
-                                                    <span class="badge bg-danger">No</span>
-                                                    {% endif %}
-                                                    {% else %}
-                                                    <span class="text-muted">-</span>
-                                                    {% endif %}
-                                                </div>
-                                                {% if current_user.has_role('admin') %}
-                                                <div class="col-md-12 mt-2">
-                                                    {% if asistencia %}
-                                                    <a href="{{ url_for('asistencia.update_asistencia', id=asistencia.id) }}"
-                                                        class="btn btn-info btn-sm">Editar</a>
-                                                    <a href="{{ url_for('asistencia.delete_asistencia', id=asistencia.id) }}"
-                                                        class="btn btn-danger btn-sm">Eliminar</a>
-                                                    {% else %}
-                                                    <button class="btn btn-secondary btn-sm" disabled>Editar</button>
-                                                    {% endif %}
-                                                </div>
-                                                {% endif %}
-                                            </div>
-                                            {% endfor %}
+                    {% if asistencias %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6><i class="fas fa-chart-line"></i> Estadísticas Generales</h6>
+                            <div class="row">
+                                {% set duenos_unicos = asistencias|map(attribute='dueno.id')|unique|list %}
+                                {% set total_duenos = duenos_unicos|length %}
+                                {% set total_asistencias = asistencias|length %}
+                                {% set total_presentes = asistencias|selectattr('asistio', 'equalto', True)|list|length %}
+                                {% set promedio_asistencia = ((total_presentes / total_asistencias) * 100)|round|int if total_asistencias > 0 else 0 %}
+                                
+                                <div class="col-md-3 mb-3">
+                                    <div class="card border-info">
+                                        <div class="card-body text-center">
+                                            <h5 class="text-info">
+                                                <i class="fas fa-users"></i> Propietarios
+                                            </h5>
+                                            <h3 class="text-info">{{ total_duenos }}</h3>
+                                            <small class="text-muted">Con registros</small>
                                         </div>
                                     </div>
-                                    <div class="modal-footer border-secondary">
-                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                                </div>
+                                
+                                <div class="col-md-3 mb-3">
+                                    <div class="card border-success">
+                                        <div class="card-body text-center">
+                                            <h5 class="text-success">
+                                                <i class="fas fa-calendar-check"></i> Total
+                                            </h5>
+                                            <h3 class="text-success">{{ total_asistencias }}</h3>
+                                            <small class="text-muted">Registros de reuniones</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-3 mb-3">
+                                    <div class="card border-primary">
+                                        <div class="card-body text-center">
+                                            <h5 class="text-primary">
+                                                <i class="fas fa-user-check"></i> Presentes
+                                            </h5>
+                                            <h3 class="text-primary">{{ total_presentes }}</h3>
+                                            <small class="text-muted">Asistieron</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-3 mb-3">
+                                    <div class="card border-warning">
+                                        <div class="card-body text-center">
+                                            <h5 class="text-warning">
+                                                <i class="fas fa-percentage"></i> Promedio
+                                            </h5>
+                                            <h3 class="text-warning">{{ promedio_asistencia }}%</h3>
+                                            <small class="text-muted">De asistencia general</small>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover" id="dueniosTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Propietario</th>
+                                    <th>Resumen de Asistencias</th>
+                                    <th>Porcentaje</th>
+                                    <th>Ver Detalles</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% set duenos_procesados = [] %}
+                                {% for asistencia in asistencias %}
+                                    {% if asistencia.dueno.id not in duenos_procesados %}
+                                        {% set _ = duenos_procesados.append(asistencia.dueno.id) %}
+                                        {% set asistencias_dueno = asistencias|selectattr('dueno.id', 'equalto', asistencia.dueno.id)|list %}
+                                        {% set asistio_count = asistencias_dueno|selectattr('asistio', 'equalto', True)|list|length %}
+                                        {% set no_asistio_count = asistencias_dueno|selectattr('asistio', 'equalto', False)|list|length %}
+                                        {% set total_dueno = asistencias_dueno|length %}
+                                        {% set porcentaje = ((asistio_count / total_dueno) * 100)|round|int if total_dueno > 0 else 0 %}
+                                        
+                                        <tr>
+                                            <td><strong>#{{ asistencia.dueno.id }}</strong></td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="me-3">
+                                                        <i class="fas fa-user-circle fa-2x text-primary"></i>
+                                                    </div>
+                                                    <div>
+                                                        <strong>{{ asistencia.dueno.nombre }} {{ asistencia.dueno.paterno or '' }} {{ asistencia.dueno.materno or '' }}</strong>
+                                                        <br><small class="text-muted">{{ asistencia.dueno.email or 'Sin email' }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex gap-2">
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-check"></i> {{ asistio_count }} Asistió
+                                                    </span>
+                                                    <span class="badge bg-danger">
+                                                        <i class="fas fa-times"></i> {{ no_asistio_count }} Faltó
+                                                    </span>
+                                                </div>
+                                                <small class="text-muted d-block mt-1">Total: {{ total_dueno }} reuniones</small>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    {% if porcentaje >= 80 %}
+                                                        <span class="badge bg-success fs-6">{{ porcentaje }}%</span>
+                                                        <i class="fas fa-smile text-success ms-2"></i>
+                                                    {% elif porcentaje >= 60 %}
+                                                        <span class="badge bg-warning fs-6">{{ porcentaje }}%</span>
+                                                        <i class="fas fa-meh text-warning ms-2"></i>
+                                                    {% else %}
+                                                        <span class="badge bg-danger fs-6">{{ porcentaje }}%</span>
+                                                        <i class="fas fa-frown text-danger ms-2"></i>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-outline-info btn-sm verAsistenciasBtn"
+                                                    data-dueno="{{ asistencia.dueno.id }}"
+                                                    data-nombre="{{ asistencia.dueno.nombre }} {{ asistencia.dueno.paterno or '' }}"
+                                                    data-asistencias='[{% for ast in asistencias_dueno %}{"id": {{ ast.id }}, "fecha": "{{ ast.reunion.fecha.strftime('%d/%m/%Y') if ast.reunion.fecha else 'Sin fecha' }}", "hora": "{{ ast.reunion.hora.strftime('%H:%M') if ast.reunion.hora else 'Sin hora' }}", "descripcion": "{{ ast.reunion.descripcion or 'Reunión general' }}", "asistio": {{ ast.asistio|lower }}}{% if not loop.last %},{% endif %}{% endfor %}]'>
+                                                    <i class="fas fa-eye"></i> Ver Historial
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-5">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <i class="fas fa-users fa-3x mb-3 text-muted opacity-50"></i>
+                                            <h5 class="text-muted">Sin registros</h5>
+                                            <p class="mb-0">No hay registros de asistencia de propietarios</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<!-- Modal para ver asistencias -->
+<div class="modal fade" id="verAsistenciasModal" tabindex="-1" aria-labelledby="verAsistenciasModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title" id="verAsistenciasModalLabel">
+          <i class="fas fa-clipboard-check"></i> Historial de Asistencias - <span id="nombreDueno"></span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div id="contenidoAsistencias">
+          <div class="text-center">
+            <div class="spinner-border text-info" role="status">
+              <span class="visually-hidden">Cargando...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="fas fa-times"></i> Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.table-hover tbody tr:hover {
+    background-color: rgba(40, 167, 69, 0.1);
+}
+.btn-group .btn { margin-right: 2px; }
+.card-header { border-bottom: 3px solid rgba(255, 255, 255, 0.2); }
+.badge { font-size: 0.75em; }
+</style>
+
+<script>
+// Variable global para el modal
+let modalAsistencias = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar el modal
+    const modalElement = document.getElementById('verAsistenciasModal');
+    if (modalElement) {
+        modalAsistencias = new bootstrap.Modal(modalElement);
+    }
+    
+    // Manejar clicks en los botones "Ver"
+    document.querySelectorAll('.verAsistenciasBtn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const duenioId = this.dataset.dueno;
+            const nombreDuenio = this.dataset.nombre;
+            const asistenciasData = this.dataset.asistencias ? JSON.parse(this.dataset.asistencias) : [];
+            
+            // Actualizar título del modal
+            document.getElementById('nombreDueno').textContent = nombreDuenio;
+            
+            // Mostrar spinner mientras carga
+            document.getElementById('contenidoAsistencias').innerHTML = `
+                <div class="text-center py-4">
+                    <div class="spinner-border text-info" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Cargando historial de asistencias...</p>
+                </div>`;
+            
+            // Mostrar modal
+            if (modalAsistencias) {
+                modalAsistencias.show();
+            }
+            
+            // Generar contenido del historial
+            setTimeout(() => {
+                mostrarHistorialAsistencias(duenioId, nombreDuenio, asistenciasData);
+            }, 500);
+        });
+    });
+});
+
+function mostrarHistorialAsistencias(duenioId, nombreDuenio, asistenciasData) {
+    // Construir la tabla de asistencias
+    let contenidoHTML = `
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th><i class="fas fa-calendar text-info"></i> Fecha</th>
+                        <th><i class="fas fa-clock text-warning"></i> Hora</th>
+                        <th><i class="fas fa-comment text-primary"></i> Descripción</th>
+                        <th><i class="fas fa-user-check text-success"></i> Estado</th>
+                        <th class="text-center"><i class="fas fa-cogs"></i> Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+    if (asistenciasData && asistenciasData.length > 0) {
+        asistenciasData.forEach(asistencia => {
+            const estadoBadge = asistencia.asistio 
+                ? '<span class="badge bg-success"><i class="fas fa-check"></i> Asistió</span>'
+                : '<span class="badge bg-danger"><i class="fas fa-times"></i> No asistió</span>';
+            
+            contenidoHTML += `
+                <tr>
+                    <td>
+                        <strong class="text-dark">${asistencia.fecha || 'Sin fecha'}</strong>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark">
+                            <i class="fas fa-clock"></i> ${asistencia.hora || 'Sin hora'}
+                        </span>
+                    </td>
+                    <td>
+                        <small class="text-muted">${asistencia.descripcion || 'Reunión general'}</small>
+                    </td>
+                    <td>${estadoBadge}</td>
+                    <td class="text-center">
+                        <div class="btn-group btn-group-sm">
+                            <a href="/asistencias/${asistencia.id}/update" 
+                               class="btn btn-outline-info btn-sm" 
+                               title="Editar asistencia">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button onclick="confirmarEliminacion(${asistencia.id})" 
+                                    class="btn btn-outline-danger btn-sm" 
+                                    title="Eliminar registro">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>`;
+        });
+        
+        // Calcular estadísticas
+        const totalReuniones = asistenciasData.length;
+        const asistenciasConfirmadas = asistenciasData.filter(a => a.asistio).length;
+        const porcentaje = totalReuniones > 0 ? Math.round((asistenciasConfirmadas / totalReuniones) * 100) : 0;
+        
+        let colorPorcentaje = 'text-danger';
+        if (porcentaje >= 80) colorPorcentaje = 'text-success';
+        else if (porcentaje >= 60) colorPorcentaje = 'text-warning';
+        
+        contenidoHTML += `
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Resumen de estadísticas -->
+        <div class="row mt-3">
+            <div class="col-12">
+                <div class="alert alert-light border">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <i class="fas fa-calendar-check text-success"></i>
+                            <strong class="d-block">Reuniones totales</strong>
+                            <span class="text-muted">${totalReuniones}</span>
+                        </div>
+                        <div class="col-md-4">
+                            <i class="fas fa-user-check text-primary"></i>
+                            <strong class="d-block">Asistencias</strong>
+                            <span class="text-success">${asistenciasConfirmadas}</span>
+                        </div>
+                        <div class="col-md-4">
+                            <i class="fas fa-percent text-info"></i>
+                            <strong class="d-block">Porcentaje</strong>
+                            <span class="${colorPorcentaje}">${porcentaje}%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    } else {
+        contenidoHTML += `
+            <tr>
+                <td colspan="5" class="text-center text-muted py-5">
+                    <div class="d-flex flex-column align-items-center">
+                        <i class="fas fa-clipboard-list fa-3x mb-3 text-muted opacity-50"></i>
+                        <h5 class="text-muted">Sin registros</h5>
+                        <p class="mb-0">No hay registros de asistencia para <strong>${nombreDuenio}</strong></p>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>`;
+    }
+    
+    // Actualizar contenido del modal
+    document.getElementById('contenidoAsistencias').innerHTML = contenidoHTML;
+}
+
+function confirmarEliminacion(asistenciaId) {
+    if (confirm('¿Está seguro de que desea eliminar este registro de asistencia?\\n\\nEsta acción no se puede deshacer.')) {
+        // Crear formulario para eliminar
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/asistencias/${asistenciaId}/delete`;
+        
+        // Agregar token CSRF si existe
+        const csrfToken = document.querySelector('meta[name=csrf-token]');
+        if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = csrfToken.getAttribute('content');
+            form.appendChild(csrfInput);
+        }
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
 {% endblock %}

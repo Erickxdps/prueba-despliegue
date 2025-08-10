@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-plus-circle"></i> Crear Nueva Cuota
+                    </h3>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post">
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label for="titulo" class="form-label">
+                                    <i class="fas fa-tag"></i> Título de la Cuota:
+                                </label>
+                                <input type="text" id="titulo" name="titulo" required class="form-control"
+                                       placeholder="Ej: Cuota mensual Agosto 2025, Mantenimiento de áreas comunes, etc.">
+                                <small class="form-text text-muted">
+                                    Ingrese un título descriptivo para identificar esta cuota
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label for="descripcion" class="form-label">
+                                    <i class="fas fa-file-alt"></i> Descripción (Opcional):
+                                </label>
+                                <textarea id="descripcion" name="descripcion" class="form-control" rows="3"
+                                          placeholder="Detalles adicionales sobre la cuota, conceptos incluidos, fechas de vencimiento, etc."></textarea>
+                                <small class="form-text text-muted">
+                                    Información adicional sobre qué incluye esta cuota
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label for="monto" class="form-label">
+                                    <i class="fas fa-dollar-sign"></i> Monto de la Cuota:
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Bs.</span>
+                                    <input type="number" id="monto" name="monto" 
+                                           step="0.01" min="0" required class="form-control"
+                                           placeholder="0.00">
+                                </div>
+                                <small class="form-text text-muted">
+                                    Ingrese el monto en bolivianos (Bs.) que se aplicará a todos los terrenos
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    <strong>¡Atención!</strong> Esta cuota se aplicará automáticamente a <strong>todos los terrenos registrados</strong>. 
+                                    Se generarán multas automáticamente para aquellos que no paguen en tiempo.
+                                    <br><br>
+                                    <div class="mt-2">
+                                        <strong>Total de terrenos que recibirán la cuota:</strong> 
+                                        <span class="badge badge-primary fs-6">{{ terrenos|length }} terrenos</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    <strong>Información:</strong> Al crear esta cuota, se generará automáticamente una multa 
+                                    asociada hasta que sea pagada. Una vez pagada la cuota, la multa será eliminada.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save"></i> Crear Cuota
+                            </button>
+                            <a href="{{ url_for('cuota.list_cuotas') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Volver a Lista
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-select:focus, .form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.alert-info {
+    border-left: 4px solid #0dcaf0;
+}
+</style>
+{% endblock %}

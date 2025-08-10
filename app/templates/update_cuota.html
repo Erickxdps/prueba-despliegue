@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-info text-white py-3">
+                    <h2 class="card-title mb-0 text-center">
+                        <i class="fas fa-money-bill"></i> Editar Cuota #{{ cuota.cuota_id }}
+                    </h2>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post">
+                        <div class="row">
+                            <div class="col-md-12 mb-4">
+                                <label for="titulo" class="form-label">
+                                    <i class="fas fa-tag"></i> Título de la Cuota
+                                </label>
+                                <input type="text" id="titulo" name="titulo" required class="form-control form-control-lg"
+                                       value="{{ cuota.titulo }}"
+                                       placeholder="Ej: Cuota mensual, Mantenimiento, etc.">
+                                <small class="form-text text-muted">Nombre identificativo de la cuota</small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-4">
+                                <label for="descripcion" class="form-label">
+                                    <i class="fas fa-file-alt"></i> Descripción
+                                </label>
+                                <textarea id="descripcion" name="descripcion" class="form-control form-control-lg" rows="3"
+                                          placeholder="Detalles adicionales sobre la cuota...">{{ cuota.descripcion if cuota.descripcion else '' }}</textarea>
+                                <small class="form-text text-muted">Información adicional sobre el propósito de la cuota</small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-4">
+                                <label for="terreno_id" class="form-label">
+                                    <i class="fas fa-map-marker-alt"></i> Terreno Asociado
+                                </label>
+                                <select id="terreno_id" name="terreno_id" required class="form-select form-select-lg">
+                                    {% for terreno in terrenos %}
+                                        <option value="{{ terreno.id }}" 
+                                            {% if terreno.id == cuota.terreno_id %}selected{% endif %}>
+                                            Lote: {{ terreno.lugar }} - Manzana: {{ terreno.manzano }} 
+                                            ({{ terreno.dueno.nombre }} {{ terreno.dueno.paterno }} - CI: {{ terreno.dueno.ci }})
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <small class="form-text text-muted">Terreno al cual se asigna esta cuota</small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-4">
+                                <label for="monto" class="form-label">
+                                    <i class="fas fa-dollar-sign"></i> Monto de la Cuota
+                                </label>
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text bg-info text-white">
+                                        <i class="fas fa-money-bill-wave"></i> Bs.
+                                    </span>
+                                    <input type="number" id="monto" name="monto" 
+                                           value="{{ cuota.monto }}" step="0.01" min="0" required 
+                                           class="form-control" placeholder="0.00">
+                                </div>
+                                <small class="form-text text-muted">Cantidad a cobrar por esta cuota</small>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="pagado" name="pagado"
+                                           {% if cuota.pagado %}checked{% endif %} style="transform: scale(1.5);">
+                                    <label class="form-check-label" for="pagado" style="font-weight: 500; padding-left: 0.5rem;">
+                                        <i class="fas fa-check-circle text-success"></i> Marcar como Pagado
+                                    </label>
+                                </div>
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-info-circle"></i> Si marca como pagado, se eliminará automáticamente la multa asociada
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card border-0 bg-light">
+                                    <div class="card-body text-center py-3">
+                                        <h6 class="card-title text-muted mb-2">
+                                            <i class="fas fa-flag"></i> Estado Actual
+                                        </h6>
+                                        {% if cuota.pagado %}
+                                            <span class="badge bg-success fs-6 px-3 py-2">
+                                                <i class="fas fa-check-circle"></i> PAGADO
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger fs-6 px-3 py-2">
+                                                <i class="fas fa-exclamation-triangle"></i> PENDIENTE
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-0 bg-light">
+                                    <div class="card-body text-center py-3">
+                                        <h6 class="card-title text-muted mb-2">
+                                            <i class="fas fa-calendar-plus"></i> Fecha de Creación
+                                        </h6>
+                                        <p class="card-text fw-bold mb-0">{{ cuota.fecha_creacion.strftime('%d/%m/%Y') }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('cuota.list_cuotas') }}" class="btn btn-outline-secondary me-md-2">
+                                <i class="fas fa-arrow-left"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-info text-white">
+                                <i class="fas fa-save"></i> Actualizar Cuota
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 0.5rem;
+        border: none;
+    }
+    
+    .card-header {
+        border-radius: 0.5rem 0.5rem 0 0 !important;
+        border-bottom: none;
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%) !important;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #17a2b8;
+        box-shadow: 0 0 0 0.2rem rgba(23, 162, 184, 0.25);
+    }
+    
+    .btn-info {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        border: none;
+        padding: 0.6rem 1.5rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-info:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
+        background: linear-gradient(135deg, #138496 0%, #0f5257 100%);
+    }
+    
+    .input-group-text.bg-info {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%) !important;
+        border: none;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-text {
+        font-size: 0.8rem;
+    }
+    
+    .badge.fs-6 {
+        font-size: 0.9rem !important;
+    }
+    
+    .card-body {
+        transition: all 0.3s ease;
+    }
+    
+    .form-control, .form-select {
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:hover, .form-select:hover {
+        border-color: #17a2b8;
+        box-shadow: 0 2px 8px rgba(23, 162, 184, 0.1);
+    }
+    
+    .form-check-input:checked {
+        background-color: #198754;
+        border-color: #198754;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,358 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-danger text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="fas fa-exclamation-triangle"></i> Gestión de Multas
+                        </h4>
+                        {% if current_user.has_role('admin') %}
+                        <a href="{{ url_for('multa.create_multa') }}" class="btn btn-light btn-sm">
+                            <i class="fas fa-plus"></i> Nueva Multa
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% include 'buscar.html' %}
+                    
+                    <!-- Estadísticas de multas -->
+                    {% if multas %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6><i class="fas fa-chart-line"></i> Resumen de Multas</h6>
+                            <div class="row">
+                                {% set total_multas = multas|length %}
+                                {% set multas_asistencia = multas|selectattr("tipo", "equalto", "asistencia")|list %}
+                                {% set multas_cuota = multas|selectattr("tipo", "equalto", "cuota")|list %}
+                                {% set total_monto = multas|sum(attribute='monto') %}
+                                
+                                <div class="col-md-3 mb-3">
+                                    <div class="card border-danger">
+                                        <div class="card-body text-center">
+                                            <h5 class="text-danger">
+                                                <i class="fas fa-exclamation-triangle"></i> Total Multas
+                                            </h5>
+                                            <h3 class="text-danger">{{ total_multas }}</h3>
+                                            <small class="text-muted">Multas registradas</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-3 mb-3">
+                                    <div class="card border-warning">
+                                        <div class="card-body text-center">
+                                            <h5 class="text-warning">
+                                                <i class="fas fa-user-times"></i> Inasistencias
+                                            </h5>
+                                            <h3 class="text-warning">{{ multas_asistencia|length }}</h3>
+                                            <small class="text-muted">Por faltar a reuniones</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-3 mb-3">
+                                    <div class="card border-info">
+                                        <div class="card-body text-center">
+                                            <h5 class="text-info">
+                                                <i class="fas fa-money-bill"></i> Cuotas
+                                            </h5>
+                                            <h3 class="text-info">{{ multas_cuota|length }}</h3>
+                                            <small class="text-muted">Por cuotas impagas</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-3 mb-3">
+                                    <div class="card border-success">
+                                        <div class="card-body text-center">
+                                            <h5 class="text-success">
+                                                <i class="fas fa-dollar-sign"></i> Total Monto
+                                            </h5>
+                                            <h3 class="text-success">{{ "%.2f"|format(total_monto) }}</h3>
+                                            <small class="text-muted">Bolivianos</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover" id="multasTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Beneficiario</th>
+                                    <th>Tipo</th>
+                                    <th>Monto</th>
+                                    <th>Motivo</th>
+                                    <th>Fecha</th>
+                                    <th>Origen</th>
+                                    {% if current_user.has_role('admin') %}
+                                    <th>Acciones</th>
+                                    {% endif %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for multa in multas %}
+                                <tr>
+                                    <td><strong>#{{ multa.multa_id }}</strong></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="me-2">
+                                                {% if multa.tipo == 'asistencia' %}
+                                                    <i class="fas fa-user-times text-warning"></i>
+                                                {% elif multa.tipo == 'cuota' %}
+                                                    <i class="fas fa-money-bill text-info"></i>
+                                                {% else %}
+                                                    <i class="fas fa-exclamation-triangle text-danger"></i>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <strong>{{ multa.duenio.nombre }} {{ multa.duenio.paterno }}</strong>
+                                                <br><small class="text-muted">CI: {{ multa.duenio.ci }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if multa.tipo == 'asistencia' %}
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-user-times"></i> Inasistencia
+                                            </span>
+                                        {% elif multa.tipo == 'cuota' %}
+                                            <span class="badge bg-info">
+                                                <i class="fas fa-money-bill"></i> Cuota Impaga
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">
+                                                <i class="fas fa-question"></i> {{ multa.tipo|title }}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <strong class="text-danger fs-5">Bs. {{ "%.2f"|format(multa.monto) }}</strong>
+                                    </td>
+                                    <td>
+                                        {% if multa.descripcion %}
+                                            <small>{{ multa.descripcion[:50] }}{% if multa.descripcion|length > 50 %}...{% endif %}</small>
+                                        {% else %}
+                                            <span class="text-muted">Sin descripción</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if multa.fecha %}
+                                            <strong>{{ multa.fecha.strftime('%d/%m/%Y') }}</strong>
+                                            <br><small class="text-muted">{{ multa.fecha.strftime('%H:%M') }}</small>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if multa.reunion_id %}
+                                            <span class="badge bg-primary">
+                                                <i class="fas fa-calendar"></i> Reunión #{{ multa.reunion_id }}
+                                            </span>
+                                        {% elif multa.cuota_id %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-receipt"></i> Cuota #{{ multa.cuota_id }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">
+                                                <i class="fas fa-question"></i> Manual
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    {% if current_user.has_role('admin') %}
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('multa.update_multa', id=multa.multa_id) }}" 
+                                               class="btn btn-info btn-sm">
+                                                <i class="fas fa-edit"></i> Editar
+                                            </a>
+                                            <form method="post" action="{{ url_for('multa.delete_multa', id=multa.multa_id) }}" style="display: inline;">
+                                                <button type="submit" class="btn btn-danger btn-sm"
+                                                        onclick="return confirm('¿Está seguro de eliminar esta multa de {{ multa.duenio.nombre }}?')">
+                                                    <i class="fas fa-trash"></i> Eliminar
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted">
+                                        <div class="py-4">
+                                            <i class="fas fa-check-circle text-success fa-3x"></i>
+                                            <h5 class="mt-3">¡Sin multas registradas!</h5>
+                                            <p class="text-muted">Todos los beneficiarios están al día.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.table-hover tbody tr:hover {
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+.btn-group .btn {
+    margin-right: 2px;
+}
+
+.card-header {
+    border-bottom: 3px solid rgba(255, 255, 255, 0.2);
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+.fs-5 {
+    font-size: 1.25rem;
+}
+
+.fa-3x {
+    font-size: 3em;
+}
+</style>
+
+{% endblock %}
+                                    <th>Acciones</th>
+                                    {% endif %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for multa in multas %}
+                                <tr>
+                                    <td><strong>#{{ multa.multa_id }}</strong></td>
+                                    <td>
+                                        <div>
+                                            <strong>{{ multa.duenio.nombre }} {{ multa.duenio.paterno }} {{ multa.duenio.materno }}</strong>
+                                        </div>
+                                        <small class="text-muted">CI: {{ multa.duenio.ci }}</small>
+                                    </td>
+                                    <td>
+                                        {% if multa.tipo == 'asistencia' %}
+                                            <span class="badge badge-danger">
+                                                <i class="fas fa-user-times"></i> Inasistencia
+                                            </span>
+                                        {% elif multa.tipo == 'cuota' %}
+                                            <span class="badge badge-warning">
+                                                <i class="fas fa-money-bill"></i> Cuota
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">{{ multa.tipo|title }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <strong class="text-danger">Bs. {{ "%.2f"|format(multa.monto) }}</strong>
+                                    </td>
+                                    <td>
+                                        <small>{{ multa.descripcion if multa.descripcion else 'Sin descripción' }}</small>
+                                    </td>
+                                    <td>{{ multa.fecha.strftime('%d/%m/%Y') if multa.fecha else '-' }}</td>
+                                    <td>
+                                        {% if multa.reunion_id %}
+                                            <small class="text-info">
+                                                <i class="fas fa-calendar"></i> Reunión #{{ multa.reunion_id }}
+                                            </small>
+                                        {% elif multa.cuota_id %}
+                                            <small class="text-warning">
+                                                <i class="fas fa-receipt"></i> Cuota #{{ multa.cuota_id }}
+                                            </small>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    {% if current_user.has_role('admin') %}
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('multa.update_multa', multa_id=multa.multa_id) }}" 
+                                               class="btn btn-info btn-sm">
+                                                <i class="fas fa-edit"></i> Editar
+                                            </a>
+                                            <a href="{{ url_for('multa.delete_multa', multa_id=multa.multa_id) }}" 
+                                               class="btn btn-danger btn-sm"
+                                               onclick="return confirm('¿Está seguro de eliminar esta multa?')">
+                                                <i class="fas fa-trash"></i> Eliminar
+                                            </a>
+                                        </div>
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="{% if current_user.has_role('admin') %}8{% else %}7{% endif %}" class="text-center text-muted py-4">
+                                        <i class="fas fa-check-circle text-success fs-1"></i>
+                                        <br><br>
+                                        <h5>¡No hay multas registradas!</h5>
+                                        <p>Esto significa que todos están al día con sus obligaciones.</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Resumen de multas -->
+                    {% if multas %}
+                    <div class="row mt-4">
+                        <div class="col-md-4">
+                            <div class="card bg-danger text-white">
+                                <div class="card-body text-center">
+                                    <h5>Total Multas</h5>
+                                    <h3>{{ multas|length }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-warning text-dark">
+                                <div class="card-body text-center">
+                                    <h5>Por Inasistencia</h5>
+                                    <h3>{{ multas|selectattr('tipo', 'equalto', 'asistencia')|list|length }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-info text-white">
+                                <div class="card-body text-center">
+                                    <h5>Por Cuotas</h5>
+                                    <h3>{{ multas|selectattr('tipo', 'equalto', 'cuota')|list|length }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.badge {
+    font-size: 0.8rem;
+}
+.btn-group .btn {
+    margin-right: 2px;
+}
+.fs-1 {
+    font-size: 3rem !important;
+}
+</style>
+{% endblock %}

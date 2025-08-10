@@ -32,13 +32,13 @@ def create_duenio():
             duenio = Duenio(nombre=nombre, paterno=paterno, materno=materno, ci=ci)
             try:
                 duenio.save()
-                # Crear una multa con monto 0 para el nuevo dueño
-                multa = Multa(dueño_id=duenio.id, monto=0)
-                multa.save()
-                flash("Dueño creado exitosamente", "success")
+                # Crear una multa con monto 0 para el nuevo duenio
+                # multa = Multa(duenio_id=duenio.id, monto=0)
+                # multa.save()
+                flash("Duenio creado exitosamente", "success")
             except IntegrityError:
                 db.session.rollback()
-                flash("Error al crear el dueño", "error")
+                flash("Error al crear el duenio", "error")
             return redirect(url_for("duenio.list_duenios"))
         else:
             return jsonify({"message": "Unauthorized"}), 403
@@ -51,7 +51,7 @@ def create_duenio():
 def update_duenio(id):
     duenio = Duenio.get_by_id(id)
     if not duenio:
-        return "Dueño no encontrado", 404
+        return "Duenio no encontrado", 404
     if request.method == "POST":
         if current_user.has_role("admin"):
             nombre = request.form["nombre"]
@@ -59,7 +59,7 @@ def update_duenio(id):
             materno = request.form["materno"]
             ci = request.form["ci"]
             duenio.update(nombre=nombre, paterno=paterno, materno=materno, ci=ci)
-            flash("Dueño actualizado exitosamente", "success")
+            flash("Duenio actualizado exitosamente", "success")
             return redirect(url_for("duenio.list_duenios"))
         else:
             return jsonify({"message": "Unauthorized"}), 403
@@ -72,10 +72,10 @@ def update_duenio(id):
 def delete_duenio(id):
     duenio = Duenio.get_by_id(id)
     if not duenio:
-        return "Dueño no encontrado", 404
+        return "Duenio no encontrado", 404
     if current_user.has_role("admin"):
         duenio.delete()
-        flash("Dueño eliminado exitosamente", "success")
+        flash("Duenio eliminado exitosamente", "success")
         return redirect(url_for("duenio.list_duenios"))
     else:
         return jsonify({"message": "Unauthorized"}), 403

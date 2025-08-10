@@ -21,18 +21,18 @@ def list_terrenos():
 def create_terreno():
     if request.method == "POST":
         if current_user.has_role("admin"):
-            dueño_id = request.form["dueño_id"]
+            duenio_id = request.form["duenio_id"]
             lugar = request.form["lugar"]
             manzano = int(request.form["manzano"])
             metros_cuadrados = float(request.form["metros_cuadrados"])  # Cambiado a float
-            terreno = Terreno(dueño_id=dueño_id, lugar=lugar, manzano=manzano, metros_cuadrados=metros_cuadrados)
+            terreno = Terreno(duenio_id=duenio_id, lugar=lugar, manzano=manzano, metros_cuadrados=metros_cuadrados)
             terreno.save()
             flash("Terreno creado exitosamente", "success")
             return redirect(url_for("terreno.list_terrenos"))
         else:
             return jsonify({"message": "Unauthorized"}), 403
-    dueños = Duenio.query.all()
-    return render_template('create_terreno.html', dueños=dueños)
+    duenios = Duenio.query.all()
+    return render_template('create_terreno.html', duenios=duenios)
 
 # Ruta para actualizar terrenos por ID
 @terreno_bp.route("/terrenos/<int:id>/update", methods=["GET", "POST"])
@@ -48,14 +48,14 @@ def update_terreno(id):
             lugar = request.form["lugar"]
             manzano = int(request.form["manzano"])
             metros_cuadrados = float(request.form["metros_cuadrados"])
-            terreno.update(dueño_id=id_duenio, lugar=lugar, manzano=manzano, metros_cuadrados=metros_cuadrados)
+            terreno.update(duenio_id=id_duenio, lugar=lugar, manzano=manzano, metros_cuadrados=metros_cuadrados)
             flash("Terreno actualizado exitosamente", "success")
             return redirect(url_for("terreno.list_terrenos"))
         else:
             return jsonify({"message": "Unauthorized"}), 403
     
-    dueños = Duenio.query.all()
-    return render_template('update_terreno.html', terreno=terreno, dueños=dueños)
+    duenios = Duenio.query.all()
+    return render_template('update_terreno.html', terreno=terreno, duenios=duenios)
 
 # Ruta para eliminar terrenos por ID
 @terreno_bp.route("/terrenos/<int:id>/delete")

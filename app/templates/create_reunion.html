@@ -2,36 +2,142 @@
 
 {% block content %}
 <div class="container mt-5">
-    <div class="card shadow-lg p-4">
-        <h2 class="text-center mb-4">Registrar Reunión</h2>
-        <form method="post" id="reunionForm">
-            <div class="row mb-3">
-                <div class="col-md-12">
-                    <label for="descripcion" class="form-label">Descripción:</label>
-                    <input type="text" id="descripcion" name="descripcion" required class="form-control">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-warning text-dark">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-calendar-plus"></i> Registrar/Programar Reunión
+                    </h3>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" id="reunionForm">
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label for="descripcion" class="form-label">
+                                    <i class="fas fa-file-alt"></i> Descripción:
+                                </label>
+                                <input type="text" id="descripcion" name="descripcion" required class="form-control"
+                                       placeholder="Ej: Reunión mensual de propietarios, Asamblea general, etc.">
+                                <small class="form-text text-muted">
+                                    Breve descripción del propósito de la reunión (pasada o futura)
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3" id="descripcionInput" style="display: none;">
+                            <div class="col-md-12">
+                                <label for="descripcion_editable" class="form-label">
+                                    <i class="fas fa-edit"></i> Editar Descripción:
+                                </label>
+                                <input type="text" id="descripcion_editable" name="descripcion_editable" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="fecha" class="form-label">
+                                    <i class="fas fa-calendar"></i> Fecha:
+                                </label>
+                                <input type="date" id="fecha" name="fecha" required class="form-control">
+                                <small class="form-text text-muted">
+                                    Fecha de la reunión (puede ser pasada o futura)
+                                </small>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="hora" class="form-label">
+                                    <i class="fas fa-clock"></i> Hora:
+                                </label>
+                                <input type="time" id="hora" name="hora" required class="form-control">
+                                <small class="form-text text-muted">
+                                    Hora de inicio de la reunión
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <label for="monto_multa" class="form-label">
+                                    <i class="fas fa-exclamation-triangle"></i> Monto de Multa por Inasistencia:
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Bs.</span>
+                                    <input type="number" id="monto_multa" name="monto_multa" 
+                                           value="100.0" step="0.01" min="0" class="form-control"
+                                           placeholder="100.00">
+                                </div>
+                                <small class="form-text text-muted">
+                                    Este monto se aplicará automáticamente a quienes no asistan a la reunión
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('reunion.list_reuniones') }}" class="btn btn-outline-secondary me-md-2">
+                                <i class="fas fa-arrow-left"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save"></i> Programar Reunión
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
-            <div class="row mb-3" id="descripcionInput" style="display: none;">
-                <div class="col-md-12">
-                    <label for="descripcion_editable" class="form-label">Editar Descripción:</label>
-                    <input type="text" id="descripcion_editable" name="descripcion_editable" class="form-control">
-                </div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <label for="fecha" class="form-label">Fecha:</label>
-                    <input type="date" id="fecha" name="fecha" required class="form-control">
-                </div>
-                <div class="col-md-6">
-                    <label for="hora" class="form-label">Hora:</label>
-                    <input type="time" id="hora" name="hora" required class="form-control">
-                </div>
-            </div>
-            <div class="text-center">
-                <button type="submit" class="btn btn-primary">Registrar</button>
-            </div>
-        </form>
+        </div>
     </div>
 </div>
 
+<script>
+    // Permitir fechas pasadas y futuras para registrar reuniones históricas
+    // Se ha removido la restricción de fecha mínima para permitir anotaciones de reuniones pasadas
+</script>
+
+<style>
+    .card {
+        border-radius: 0.5rem;
+        border: none;
+    }
+    
+    .card-header {
+        border-radius: 0.5rem 0.5rem 0 0 !important;
+        border-bottom: none;
+    }
+    
+    .form-control:focus {
+        border-color: #ffc107;
+        box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+    }
+    
+    .btn-warning {
+        background: linear-gradient(135deg, #ffc107 0%, #ffca2c 100%);
+        border: none;
+        padding: 0.6rem 1.5rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        color: #212529;
+    }
+    
+    .btn-warning:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+        color: #212529;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-text {
+        font-size: 0.8rem;
+    }
+    
+    .input-group-text {
+        background-color: #ffc107;
+        color: #212529;
+        border: none;
+        font-weight: 600;
+    }
+</style>
 {% endblock %}

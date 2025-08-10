@@ -1,5 +1,6 @@
 from flask import render_template
 from flask_login import current_user
+from datetime import datetime, date
 
 
 # La función `list_reuniones` recibe una lista de
@@ -10,6 +11,7 @@ def list_reuniones(reuniones):
         reuniones = reuniones,
         title="Lista de reuniones",
         current_user=current_user,
+        today=date.today(),
     )
 
 
