@@ -74,17 +74,21 @@ def update_multa(multa_id):
     return render_template('update_multa.html', multa=multa, duenios=duenios)
 
 # Ruta para eliminar multas por ID
-@multa_bp.route("/multas/<int:multa_id>/delete")
+@multa_bp.route("/multas/<int:multa_id>/delete", methods=["POST"])
 @login_required
 @role_required("admin")
 def delete_multa(multa_id):
     multa = Multa.get_by_id(multa_id)
     if not multa:
-        return "Multa no encontrada", 404
+        flash("Multa no encontrada", "error")
+        return redirect(url_for("multa.list_multas"))
     
     if current_user.has_role("admin"):
-        multa.delete()
-        flash("Multa eliminada exitosamente", "success")
+        try:
+            multa.delete()
+            flash("Multa eliminada exitosamente", "success")
+        except Exception as e:
+            flash("Error al eliminar la multa", "error")
         return redirect(url_for("multa.list_multas"))
     else:
         return jsonify({"message": "Unauthorized"}), 403

@@ -39,5 +39,46 @@ class Duenio(db.Model):
         db.session.commit()
 
     def delete(self):
-        db.session.delete(self)
-        db.session.commit()
+        # Eliminar registros relacionados manualmente para evitar errores de foreign key
+        from models.terreno_model import Terreno
+        from models.multa_model import Multa
+        from models.asistencia_model import Asistencia
+        from models.cuota_model import Cuota
+        
+        try:
+            # 1. Obtener todos los terrenos del dueño
+            terrenos = Terreno.query.filter_by(duenio_id=self.id).all()
+            
+            # 2. Eliminar multas y cuotas de todos los terrenos del dueño
+            for terreno in terrenos:
+                cuotas = Cuota.query.filter_by(terreno_id=terreno.id).all()
+                for cuota in cuotas:
+                    # Eliminar multas relacionadas a esta cuota
+                    multas_cuota = Multa.query.filter_by(cuota_id=cuota.cuota_id).all()
+                    for multa in multas_cuota:
+                        db.session.delete(multa)
+                    
+                    # Eliminar la cuota
+                    db.session.delete(cuota)
+            
+            # 3. Eliminar todos los terrenos del dueño
+            for terreno in terrenos:
+                db.session.delete(terreno)
+            
+            # 4. Eliminar todas las multas restantes del dueño (tipo 'asistencia' u otras)
+            multas_restantes = Multa.query.filter_by(duenio_id=self.id).all()
+            for multa in multas_restantes:
+                db.session.delete(multa)
+            
+            # 5. Eliminar todas las asistencias del dueño
+            asistencias = Asistencia.query.filter_by(duenio_id=self.id).all()
+            for asistencia in asistencias:
+                db.session.delete(asistencia)
+            
+            # 6. Finalmente eliminar el dueño
+            db.session.delete(self)
+            db.session.commit()
+            
+        except Exception as e:
+            db.session.rollback()
+            raise e

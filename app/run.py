@@ -45,9 +45,43 @@ app.register_blueprint(terreno_controller.terreno_bp)
 app.register_blueprint(cuota_controller.cuota_bp)
 app.register_blueprint(multa_controller.multa_bp)
 
+def create_default_users():
+    """Crear usuarios por defecto si no existen"""
+    try:
+        # Verificar si ya existen usuarios
+        users_count = User.query.count()
+        
+        if users_count == 0:
+            print("🔄 No se encontraron usuarios. Creando usuarios por defecto...")
+            
+            # Crear usuario administrador
+            admin_user = User(
+                username="admin",
+                password="contra69882061",
+                role="admin"
+            )
+            admin_user.save()
+            print("✅ Usuario admin creado - Usuario: admin, Contraseña: contra69882061")
+            
+            # Crear usuario doctor
+            doctor_user = User(
+                username="doctor",
+                password="contra69882061", 
+                role="doctor"
+            )
+            doctor_user.save()
+            print("✅ Usuario doctor creado - Usuario: doctor, Contraseña: contra69882061")
+            print("🎯 Usuarios por defecto listos para usar")
+        else:
+            print(f"ℹ️  Ya existen {users_count} usuarios en la base de datos")
+            
+    except Exception as e:
+        print(f"❌ Error al crear usuarios por defecto: {e}")
+
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
+        create_default_users()  # Crear usuarios por defecto después de crear tablas
     port = int(os.environ.get('PORT', 5000))
     debug_mode = app.config.get("DEBUG", False)
     app.run(host='0.0.0.0', port=port, debug=debug_mode)

@@ -1,0 +1,38 @@
+🎯 CONFIGURACIÓN AUTOMÁTICA DE USUARIOS - COMPLETADA
+════════════════════════════════════════════════════════
+
+✅ FUNCIONALIDAD IMPLEMENTADA:
+┌─────────────────────────────────────────────────────────┐
+│ Ahora cuando borres la base de datos y reinicies la    │
+│ aplicación, se crearán automáticamente los usuarios    │
+│ por defecto sin necesidad de ejecutar scripts.         │
+└─────────────────────────────────────────────────────────┘
+
+🔑 CREDENCIALES CONFIGURADAS:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ 👤 ADMINISTRADOR:                                       ┃
+┃    Usuario: admin                                       ┃
+┃    Contraseña: contra69882061                          ┃
+┃    Permisos: Completos                                  ┃
+┃                                                         ┃
+┃ 👤 USUARIO NORMAL:                                      ┃
+┃    Usuario: doctor                                      ┃
+┃    Contraseña: contra69882061                          ┃
+┃    Permisos: Básicos                                    ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+🚀 PROCESO AUTOMÁTICO:
+1. 🗑️  Borrar base de datos → Eliminar sistema.db
+2. ▶️  Iniciar aplicación → python app/run.py
+3. ⚡ Detección automática → "No hay usuarios"
+4. 👥 Creación automática → Usuarios por defecto
+5. 🎯 Listo para usar → Sin pasos adicionales
+
+📁 SCRIPTS ADICIONALES DISPONIBLES:
+• init_database.py → Crear usuarios manualmente
+• reset_database.py → Recrear BD completa
+• DATABASE_SCRIPTS.md → Documentación
+
+🔥 RESULTADO:
+Ya no necesitas crear usuarios manualmente cada vez.
+¡Solo borra la BD e inicia la app!

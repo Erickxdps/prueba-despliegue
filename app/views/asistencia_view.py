@@ -2,9 +2,9 @@ from flask import render_template
 from flask_login import current_user
 
 
-# La función `list_asistencias` recibe una lista de
-# asistenciaes y renderiza el template `asistenciaes.html`
-def list_asistencias(asistencias, duenios=None, reuniones=None):
+# La función `list_asistencias` recibe un objeto paginado de
+# asistencias y renderiza el template `asistencias.html`
+def list_asistencias(asistencias_paginated, search="", estadisticas=None, duenios=None, reuniones=None):
     from models.duenio_model import Duenio
     from models.reunion_model import Reunion
     
@@ -16,9 +16,12 @@ def list_asistencias(asistencias, duenios=None, reuniones=None):
         
     return render_template(
         "asistencias.html",
-        asistencias=asistencias,
+        asistencias_paginated=asistencias_paginated,
+        asistencias=asistencias_paginated.items,  # Mantener compatibilidad
         duenios=duenios,
         reuniones=reuniones,
+        search=search,
+        estadisticas=estadisticas,  # Estadísticas globales
         title="Lista de asistencias",
         current_user=current_user,
     )

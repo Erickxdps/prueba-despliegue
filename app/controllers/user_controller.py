@@ -108,15 +108,20 @@ def update_user(id):
         return redirect(url_for("user.list_users"))
     return user_view.actualizar(user)
 
-# Elimina usuarior por ID
-@user_bp.route("/users/<int:id>/delete")
+# Elimina usuario por ID
+@user_bp.route("/users/<int:id>/delete", methods=["POST"])
 @login_required
 @role_required("admin")
 def delete_user(id):
     user = User.get_by_id(id)
     if not user:
-        return "Usuario no encontrado", 404
-    user.delete()
+        flash("Usuario no encontrado", "error")
+        return redirect(url_for("user.list_users"))
+    try:
+        user.delete()
+        flash("Usuario eliminado exitosamente", "success")
+    except Exception as e:
+        flash("Error al eliminar el usuario", "error")
     return redirect(url_for("user.list_users"))
 
 # muestra el perfil

@@ -4,8 +4,8 @@ from sqlalchemy import UniqueConstraint
 class Asistencia(db.Model):
     __tablename__ = "Asistencia"
     id = db.Column(db.Integer, primary_key=True)
-    duenio_id = db.Column(db.Integer, db.ForeignKey('Duenio.id'), nullable=False)
-    id_reunion = db.Column(db.Integer, db.ForeignKey('Reunion.id'), nullable=False)
+    duenio_id = db.Column(db.Integer, db.ForeignKey('Duenio.id', ondelete='CASCADE'), nullable=False)
+    id_reunion = db.Column(db.Integer, db.ForeignKey('Reunion.id', ondelete='CASCADE'), nullable=False)
     asistio = db.Column(db.Boolean, nullable=False, default=False)
     
     reunion = db.relationship('Reunion', backref='asistencias')

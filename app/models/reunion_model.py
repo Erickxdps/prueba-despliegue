@@ -39,5 +39,25 @@ class Reunion(db.Model):
         db.session.commit()
 
     def delete(self):
-        db.session.delete(self)
-        db.session.commit()
+        # Eliminar registros relacionados manualmente para evitar errores de foreign key
+        from models.asistencia_model import Asistencia
+        from models.multa_model import Multa
+        
+        try:
+            # 1. Eliminar todas las asistencias de esta reunión
+            asistencias = Asistencia.query.filter_by(id_reunion=self.id).all()
+            for asistencia in asistencias:
+                db.session.delete(asistencia)
+            
+            # 2. Desvincular multas relacionadas con esta reunión (SET NULL)
+            multas = Multa.query.filter_by(reunion_id=self.id).all()
+            for multa in multas:
+                multa.reunion_id = None
+            
+            # 3. Finalmente eliminar la reunión
+            db.session.delete(self)
+            db.session.commit()
+            
+        except Exception as e:
+            db.session.rollback()
+            raise e

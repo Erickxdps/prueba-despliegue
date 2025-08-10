@@ -2,12 +2,14 @@ from flask import render_template
 from flask_login import current_user
 
 
-# La función `list_duenios` recibe una lista de
-# duenioes y renderiza el template `duenioes.html`
-def list_duenios(duenios):
+# La función `list_duenios` recibe un objeto paginado de
+# duenios y renderiza el template `duenios.html` 
+def list_duenios(duenios_paginated, search=""):
     return render_template(
         "duenios.html",
-        duenios = duenios,
+        duenios_paginated=duenios_paginated,
+        duenios=duenios_paginated.items,  # Mantener compatibilidad
+        search=search,
         title="Lista de duenios",
         current_user=current_user,
     )

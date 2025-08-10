@@ -6,15 +6,64 @@ from models.reunion_model import Reunion
 from models.multa_model import Multa
 from views import asistencia_view
 from utils.decorators import role_required
+from database import db
+from sqlalchemy import or_  # Importar or_ para búsquedas
 
 asistencia_bp = Blueprint("asistencia", __name__)
 
-# Ruta para obtener la lista de asistencias
+# Ruta para obtener la lista de asistencias con paginación y búsqueda
 @asistencia_bp.route("/asistencias")
 @login_required
 def list_asistencias():
-    asistencias = Asistencia.get_all()
-    return asistencia_view.list_asistencias(asistencias)
+    # Obtener parámetros de búsqueda y paginación
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)  # 10 registros por página por defecto
+    search = request.args.get('search', '', type=str)
+    
+    # Construir la consulta base con joins para búsqueda
+    query = db.session.query(Asistencia).join(Duenio).join(Reunion)
+    
+    # Aplicar filtro de búsqueda si existe
+    if search:
+        search_filter = f"%{search}%"
+        query = query.filter(
+            or_(
+                Duenio.nombre.ilike(search_filter),
+                Duenio.paterno.ilike(search_filter),
+                Duenio.materno.ilike(search_filter),
+                Duenio.ci.ilike(search_filter),
+                Reunion.titulo.ilike(search_filter),
+                Reunion.descripcion.ilike(search_filter)
+            )
+        )
+    
+    # Aplicar paginación (ordenar por fecha de reunión descendente para mostrar las más recientes primero)
+    asistencias_paginated = query.order_by(Reunion.fecha.desc()).paginate(
+        page=page,
+        per_page=per_page,
+        error_out=False
+    )
+    
+    # Calcular estadísticas globales (de todas las asistencias, no solo de la página actual)
+    if search:
+        # Si hay búsqueda, calcular estadísticas de los resultados filtrados
+        total_query = query
+    else:
+        # Si no hay búsqueda, calcular estadísticas de todas las asistencias
+        total_query = db.session.query(Asistencia).join(Duenio).join(Reunion)
+    
+    # Estadísticas globales
+    total_asistencias = total_query.count()
+    total_presentes = total_query.filter(Asistencia.asistio == True).count()
+    total_ausentes = total_query.filter(Asistencia.asistio == False).count()
+    reuniones_unicas = total_query.with_entities(Asistencia.id_reunion).distinct().count()
+    
+    return asistencia_view.list_asistencias(asistencias_paginated, search, {
+        'total_asistencias': total_asistencias,
+        'total_presentes': total_presentes,
+        'total_ausentes': total_ausentes,
+        'reuniones_unicas': reuniones_unicas
+    })
 
 # Ruta para crear asistencias (manual, raramente usada)
 @asistencia_bp.route("/asistencias/create", methods=["GET", "POST"])
@@ -97,19 +146,23 @@ def update_asistencia(id):
     return asistencia_view.update_asistencia(asistencia)
 
 # Ruta para eliminar asistencias por ID
-@asistencia_bp.route("/asistencias/<int:id>/delete")
+@asistencia_bp.route("/asistencias/<int:id>/delete", methods=["POST"])
 @login_required
 @role_required("admin")
 def delete_asistencia(id):
     asistencia = Asistencia.get_by_id(id)
     if not asistencia:
-        return "Asistencia no encontrada", 404
+        flash("Asistencia no encontrada", "error")
+        return redirect(url_for("asistencia.list_asistencias"))
     
     if current_user.has_role("admin"):
-        # Eliminar multa asociada antes de eliminar asistencia
-        eliminar_multa_asistencia(asistencia)
-        asistencia.delete()
-        flash("Asistencia eliminada exitosamente", "success")
+        try:
+            # Eliminar multa asociada antes de eliminar asistencia
+            eliminar_multa_asistencia(asistencia)
+            asistencia.delete()
+            flash("Asistencia eliminada exitosamente", "success")
+        except Exception as e:
+            flash("Error al eliminar la asistencia", "error")
         return redirect(url_for("asistencia.list_asistencias"))
     else:
         return jsonify({"message": "Unauthorized"}), 403
