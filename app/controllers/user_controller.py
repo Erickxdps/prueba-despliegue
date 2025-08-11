@@ -1,4 +1,4 @@
-from flask import Blueprint, request, redirect, url_for, flash, render_template
+from flask import Blueprint, request, redirect, url_for, flash, render_template, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash
 from utils.decorators import role_required
@@ -9,12 +9,13 @@ from models.terreno_model import Terreno
 from models.duenio_model import Duenio
 from models.reunion_model import Reunion
 from models.cuota_model import Cuota
+from models.multa_model import Multa
 
 user_bp = Blueprint("user", __name__)
 
 @user_bp.route('/')
 def index():
-    # Obtener conteos para las estadísticas
+    # Obtener conteos para las estadísticas (súper rápido)
     duenos_count = Duenio.query.count()
     terrenos_count = Terreno.query.count()
     reuniones_count = Reunion.query.count()
@@ -23,26 +24,39 @@ def index():
     cuotas_titulos = Cuota.query.with_entities(Cuota.titulo).distinct().all()
     cuotas_count = len(cuotas_titulos)
     
-    # Datos adicionales
-    asistencias = Asistencia.query.all()
-    terrenos = Terreno.query.all()
-    # Cargar cuotas con las relaciones necesarias
-    cuotas = Cuota.query.join(Terreno).join(Duenio).all()
+    # Cargar solo primeros registros para el directorio (paginado)
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)  # Solo 10 por defecto
+    search = request.args.get('search', '', type=str)
     
+    # Consulta optimizada con paginación para dueños únicos
+    query = Duenio.query
+    if search:
+        search_filter = f"%{search}%"
+        query = query.filter(
+            (Duenio.nombre.ilike(search_filter)) |
+            (Duenio.paterno.ilike(search_filter)) |
+            (Duenio.materno.ilike(search_filter)) |
+            (Duenio.ci.ilike(search_filter))
+        )
+    
+    duenos_paginated = query.paginate(
+        page=page,
+        per_page=per_page,
+        error_out=False
+    )
+    
+    # Función para multas (optimizada)
     def multas(multas_list):
-        total = 0
-        for multa in multas_list:
-            total += multa.monto
-        return total
+        return sum(multa.monto for multa in multas_list)
     
     return render_template('index.html', 
                          duenos_count=duenos_count,
                          terrenos_count=terrenos_count, 
                          reuniones_count=reuniones_count,
                          cuotas_count=cuotas_count,
-                         asistencias=asistencias, 
-                         terrenos=terrenos, 
-                         cuotas=cuotas,  # Pasar las cuotas a la vista
+                         duenos_paginated=duenos_paginated,
+                         search=search,
                          multas=multas)
 
 # lista usuarios
@@ -130,3 +144,164 @@ def delete_user(id):
 def profile(id):
     user = User.get_by_id(id)
     return user_view.perfil(user)
+
+# ========== ENDPOINTS AJAX PARA MODALES ==========
+@user_bp.route('/api/dueno/<int:dueno_id>/asistencias')
+def get_dueno_asistencias(dueno_id):
+    """Obtiene las asistencias de un dueño para el modal"""
+    try:
+        print(f"DEBUG: Iniciando búsqueda de asistencias para dueño {dueno_id}")
+        
+        # Primero verificar que el dueño existe
+        dueno = Duenio.query.get(dueno_id)
+        if not dueno:
+            print(f"ERROR: Dueño {dueno_id} no encontrado")
+            return jsonify({'success': False, 'error': f'Dueño {dueno_id} no encontrado'}), 404
+        
+        print(f"DEBUG: Dueño encontrado: {dueno.nombre}")
+        
+        # Buscar asistencias
+        asistencias = Asistencia.query.filter_by(duenio_id=dueno_id).all()
+        print(f"DEBUG: Encontradas {len(asistencias)} asistencias")
+        
+        # Buscar multas por asistencia para este dueño
+        multas_asistencia = Multa.query.filter_by(duenio_id=dueno_id, tipo='asistencia').all()
+        print(f"DEBUG: Encontradas {len(multas_asistencia)} multas de asistencia")
+        
+        # Crear diccionario de multas por reunión
+        multas_por_reunion = {}
+        for multa in multas_asistencia:
+            multas_por_reunion[multa.reunion_id] = float(multa.monto)
+        
+        data = []
+        for i, asistencia in enumerate(asistencias):
+            print(f"DEBUG: Procesando asistencia {i+1}")
+            try:
+                # Verificar que la relación reunion existe
+                if not asistencia.reunion:
+                    print(f"WARNING: Asistencia {i+1} no tiene reunión asociada")
+                    continue
+                    
+                reunion_data = {
+                    'tema': asistencia.reunion.descripcion or 'Sin descripción',
+                    'fecha': asistencia.reunion.fecha.strftime('%d/%m/%Y') if asistencia.reunion.fecha else 'Sin fecha',
+                    'hora': asistencia.reunion.hora.strftime('%H:%M') if asistencia.reunion.hora else 'Sin hora'
+                }
+                
+                # Buscar multa para esta reunión si no asistió
+                multa_monto = 0
+                if not asistencia.asistio and asistencia.id_reunion in multas_por_reunion:
+                    multa_monto = multas_por_reunion[asistencia.id_reunion]
+                    print(f"DEBUG: Multa encontrada para asistencia {i+1}: {multa_monto}")
+                
+                asistencia_data = {
+                    'reunion': reunion_data,
+                    'presente': asistencia.asistio,
+                    'multa_monto': multa_monto,
+                    'observaciones': 'Sin observaciones'
+                }
+                data.append(asistencia_data)
+                print(f"DEBUG: Asistencia {i+1} procesada correctamente")
+                
+            except Exception as e:
+                print(f"ERROR al procesar asistencia {i+1}: {str(e)}")
+                continue
+        
+        result = {
+            'success': True,
+            'dueno': {
+                'nombre': f"{dueno.nombre} {dueno.paterno or ''} {dueno.materno or ''}",
+                'ci': dueno.ci
+            },
+            'asistencias': data
+        }
+        
+        print(f"DEBUG: Enviando respuesta con {len(data)} asistencias")
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"ERROR GENERAL: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@user_bp.route('/api/dueno/<int:dueno_id>/terrenos')
+def get_dueno_terrenos(dueno_id):
+    """Obtiene los terrenos de un dueño para el modal"""
+    try:
+        print(f"DEBUG: Iniciando búsqueda de terrenos para dueño {dueno_id}")
+        
+        dueno = Duenio.query.get(dueno_id)
+        if not dueno:
+            return jsonify({'success': False, 'error': f'Dueño {dueno_id} no encontrado'}), 404
+        
+        print(f"DEBUG: Dueño encontrado: {dueno.nombre}")
+        
+        terrenos = Terreno.query.filter_by(duenio_id=dueno_id).all()
+        print(f"DEBUG: Encontrados {len(terrenos)} terrenos")
+        
+        data = []
+        for terreno in terrenos:
+            data.append({
+                'numero_lote': terreno.lugar,
+                'superficie': terreno.metros_cuadrados,
+                'ubicacion': f"Manzana {terreno.manzano}",
+                'descripcion': 'Sin descripción'
+            })
+        
+        return jsonify({
+            'success': True,
+            'dueno': {
+                'nombre': f"{dueno.nombre} {dueno.paterno or ''} {dueno.materno or ''}",
+                'ci': dueno.ci
+            },
+            'terrenos': data
+        })
+    except Exception as e:
+        print(f"ERROR TERRENOS: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@user_bp.route('/api/dueno/<int:dueno_id>/cuotas')
+def get_dueno_cuotas(dueno_id):
+    """Obtiene las cuotas de un dueño para el modal"""
+    try:
+        print(f"DEBUG: Iniciando búsqueda de cuotas para dueño {dueno_id}")
+        
+        dueno = Duenio.query.get(dueno_id)
+        if not dueno:
+            return jsonify({'success': False, 'error': f'Dueño {dueno_id} no encontrado'}), 404
+        
+        print(f"DEBUG: Dueño encontrado: {dueno.nombre}")
+        
+        # Buscar cuotas a través de terrenos
+        cuotas = Cuota.query.join(Terreno).filter(Terreno.duenio_id == dueno_id).all()
+        print(f"DEBUG: Encontradas {len(cuotas)} cuotas")
+        
+        data = []
+        for cuota in cuotas:
+            monto = float(cuota.monto)
+                
+            data.append({
+                'mes': 'N/A',
+                'anio': 'N/A',
+                'monto': monto,
+                'estado': 'pagado' if cuota.pagado else 'pendiente',
+                'descripcion': cuota.titulo,
+                'fecha_vencimiento': cuota.fecha_creacion.strftime('%d/%m/%Y') if cuota.fecha_creacion else 'Sin fecha'
+            })
+        
+        return jsonify({
+            'success': True,
+            'dueno': {
+                'nombre': f"{dueno.nombre} {dueno.paterno or ''} {dueno.materno or ''}",
+                'ci': dueno.ci
+            },
+            'cuotas': data
+        })
+    except Exception as e:
+        print(f"ERROR CUOTAS: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500

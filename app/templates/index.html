@@ -75,7 +75,7 @@
                                 </div>
                                 <div class="stat-content">
                                     <h3 class="stat-number">{{ cuotas_count if cuotas_count else '0' }}</h3>
-                                    <p class="stat-label">Cuotas</p>
+                                    <p class="stat-label">Aportes</p>
                                 </div>
                             </div>
                         </div>
@@ -141,22 +141,33 @@
 </div>
 {% endif %}
 
-<!-- Directorio de Propietarios -->
-<div class="directory-section">
+<!-- Directorio Optimizado de Propietarios -->
+<div class="directory-section mb-5">
     <div class="container">
         <div class="section-header d-flex justify-content-between align-items-center mb-4">
             <h2 class="section-title mb-0">
                 <i class="fas fa-address-book me-2"></i>Directorio de Propietarios
+                <small class="text-muted fs-6 ms-2">({{ duenos_paginated.total if duenos_paginated else 0 }} total)</small>
             </h2>
             
             <div class="search-container">
-                <div class="input-group">
-                    <span class="input-group-text bg-transparent border-end-0">
-                        <i class="fas fa-search"></i>
-                    </span>
-                    <input type="text" id="searchInput" class="form-control border-start-0" 
-                           placeholder="Buscar propietario...">
-                </div>
+                <form method="GET" action="{{ url_for('user.index') }}" class="d-flex align-items-center">
+                    <div class="input-group" style="max-width: 300px;">
+                        <input type="text" 
+                               name="search" 
+                               class="form-control" 
+                               placeholder="Buscar propietario..." 
+                               value="{{ search }}">
+                        <button class="btn btn-outline-success" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                    {% if search %}
+                    <a href="{{ url_for('user.index') }}" class="btn btn-outline-secondary ms-2">
+                        <i class="fas fa-times"></i>
+                    </a>
+                    {% endif %}
+                </form>
             </div>
         </div>
         
@@ -169,54 +180,67 @@
                             <th><i class="fas fa-id-card me-2"></i>CI</th>
                             <th><i class="fas fa-calendar-check me-2"></i>Asistencias</th>
                             <th><i class="fas fa-map-marker-alt me-2"></i>Terrenos</th>
-                            <th><i class="fas fa-money-bill-wave me-2"></i>Cuotas</th>
+                            <th><i class="fas fa-money-bill-wave me-2"></i>Aportes</th>
                             <th><i class="fas fa-exclamation-triangle me-2"></i>Multas</th>
                         </tr>
                     </thead>
-                    <tbody id="propietariosBody">
-                        {% set duenos_unicos = {} %}
-                        {% for asistencia in asistencias %}
-                            {% if asistencia.dueno.id not in duenos_unicos %}
-                                {% set _ = duenos_unicos.update({asistencia.dueno.id: asistencia.dueno}) %}
-                                <tr class="propietario-row">
-                                    <td class="propietario-info">
-                                        <div class="propietario-details">
-                                            <div class="propietario-name">
-                                                {{ asistencia.dueno.nombre }} {{ asistencia.dueno.paterno }} {{ asistencia.dueno.materno }}
-                                            </div>
-                                            <div class="propietario-status">
-                                                <span class="badge bg-success">Activo</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="ci-info">
-                                        <span class="ci-number">{{ asistencia.dueno.ci }}</span>
-                                    </td>
-                                    <td>
-                                        <button type="button" class="btn btn-info btn-sm action-btn" 
-                                                data-bs-toggle="modal" data-bs-target="#asistencias{{ asistencia.dueno.id }}">
-                                            <i class="fas fa-eye me-1"></i>Ver Asistencias
-                                        </button>
-                                    </td>
-                                    <td>
-                                        <button type="button" class="btn btn-success btn-sm action-btn"
-                                                data-bs-toggle="modal" data-bs-target="#terrenos{{ asistencia.dueno.id }}">
-                                            <i class="fas fa-map me-1"></i>Ver Terrenos
-                                        </button>
-                                    </td>
-                                    <td>
-                                        <button type="button" class="btn btn-warning btn-sm action-btn"
-                                                data-bs-toggle="modal" data-bs-target="#cuotas{{ asistencia.dueno.id }}">
-                                            <i class="fas fa-money-bill-wave me-1"></i>Ver Cuotas
-                                        </button>
-                                    </td>
-                                    <td>
-                                        <div class="multas-info">
-                                            {{ multas(asistencia.dueno.multas) }}
-                                        </div>
-                                    </td>
-                                </tr>
-                            {% endif %}
+                    <tbody>
+                        {% for dueno in duenos_paginated.items %}
+                        <tr class="propietario-row">
+                            <td class="propietario-info">
+                                <div class="propietario-details">
+                                    <div class="propietario-name">{{ dueno.nombre }} {{ dueno.paterno or '' }} {{ dueno.materno or '' }}</div>
+                                    <div class="propietario-status">
+                                        <span class="badge bg-success">Activo</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="ci-info">
+                                <span class="ci-number">{{ dueno.ci }}</span>
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-info btn-sm action-btn btn-asistencias" 
+                                        data-dueno-id="{{ dueno.id }}" 
+                                        data-dueno-nombre="{{ dueno.nombre }} {{ dueno.paterno or '' }} {{ dueno.materno or '' }}">
+                                    <i class="fas fa-eye me-1"></i>Ver Asistencias
+                                </button>
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-success btn-sm action-btn btn-terrenos"
+                                        data-dueno-id="{{ dueno.id }}" 
+                                        data-dueno-nombre="{{ dueno.nombre }} {{ dueno.paterno or '' }} {{ dueno.materno or '' }}">
+                                    <i class="fas fa-map me-1"></i>Ver Terrenos
+                                </button>
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-warning btn-sm action-btn btn-cuotas"
+                                        data-dueno-id="{{ dueno.id }}" 
+                                        data-dueno-nombre="{{ dueno.nombre }} {{ dueno.paterno or '' }} {{ dueno.materno or '' }}">
+                                    <i class="fas fa-money-bill-wave me-1"></i>Ver Aportes
+                                </button>
+                            </td>
+                            <td>
+                                <div class="multas-info">
+                                    <span class="text-danger fw-bold">Bs. {{ multas(dueno.multas) }}</span>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-5">
+                                <div class="d-flex flex-column align-items-center">
+                                    <i class="fas fa-users fa-3x mb-3 text-muted opacity-50"></i>
+                                    <h5 class="text-muted">Sin registros</h5>
+                                    <p class="mb-0">
+                                        {% if search %}
+                                            No se encontraron propietarios que coincidan con "{{ search }}"
+                                        {% else %}
+                                            No hay propietarios registrados en el sistema
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </td>
+                        </tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -224,16 +248,80 @@
         </div>
         
         <!-- Paginación -->
-        <div class="pagination-controls d-flex justify-content-center align-items-center mt-4">
-            <button class="btn btn-outline-primary me-3" id="prevPage">
-                <i class="fas fa-chevron-left"></i>
-            </button>
-            <span class="page-info">
-                Página <span id="pageNumber" class="fw-bold">1</span>
-            </span>
-            <button class="btn btn-outline-primary ms-3" id="nextPage">
-                <i class="fas fa-chevron-right"></i>
-            </button>
+        {% if duenos_paginated and duenos_paginated.pages > 1 %}
+        <nav aria-label="Navegación de páginas" class="mt-4">
+            <ul class="pagination justify-content-center">
+                <!-- Botón Anterior -->
+                {% if duenos_paginated.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('user.index', page=duenos_paginated.prev_num, search=search) }}">
+                        <i class="fas fa-chevron-left"></i> Anterior
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link"><i class="fas fa-chevron-left"></i> Anterior</span>
+                </li>
+                {% endif %}
+
+                <!-- Números de página -->
+                {% for page_num in duenos_paginated.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                    {% if page_num %}
+                        {% if page_num != duenos_paginated.page %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('user.index', page=page_num, search=search) }}">{{ page_num }}</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% endif %}
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">…</span>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+
+                <!-- Botón Siguiente -->
+                {% if duenos_paginated.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('user.index', page=duenos_paginated.next_num, search=search) }}">
+                        Siguiente <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">Siguiente <i class="fas fa-chevron-right"></i></span>
+                </li>
+                {% endif %}
+            </ul>
+            
+            <!-- Selector de registros por página -->
+            <div class="d-flex justify-content-center mt-3">
+                <form method="GET" action="{{ url_for('user.index') }}" class="d-flex align-items-center">
+                    <input type="hidden" name="search" value="{{ search }}">
+                    <label class="form-label mb-0 me-2">Mostrar:</label>
+                    <select name="per_page" class="form-select form-select-sm me-2" style="width: auto;" onchange="this.form.submit()">
+                        <option value="10" {% if request.args.get('per_page', '10') == '10' %}selected{% endif %}>10</option>
+                        <option value="25" {% if request.args.get('per_page') == '25' %}selected{% endif %}>25</option>
+                        <option value="50" {% if request.args.get('per_page') == '50' %}selected{% endif %}>50</option>
+                    </select>
+                    <span class="text-muted">por página</span>
+                </form>
+            </div>
+        </nav>
+        {% endif %}
+        
+        <!-- Información adicional -->
+        <div class="text-center mt-4">
+            <small class="text-muted">
+                <i class="fas fa-info-circle me-1"></i>
+                Mostrando {{ duenos_paginated.per_page * (duenos_paginated.page - 1) + 1 }} 
+                - {{ duenos_paginated.per_page * (duenos_paginated.page - 1) + duenos_paginated.items|length }} 
+                de {{ duenos_paginated.total }} propietarios
+                {% if search %} | Búsqueda: "{{ search }}"{% endif %}
+            </small>
         </div>
     </div>
 </div>
@@ -339,7 +427,7 @@
                                 <thead>
                                     <tr>
                                         <th>Lote/Lugar</th>
-                                        <th class="d-none d-md-table-cell">Manzana</th>
+                                        <th class="d-none d-md-table-cell">Manzano</th>
                                         <th>Metros²</th>
                                     </tr>
                                 </thead>
@@ -349,7 +437,7 @@
                                         <td>
                                             <span class="badge bg-primary">{{ terr.lugar }}</span>
                                             <div class="d-md-none text-muted mt-1">
-                                                <small>Manzana: {{ terr.manzano }}</small>
+                                                <small>Manzano: {{ terr.manzano }}</small>
                                             </div>
                                         </td>
                                         <td class="d-none d-md-table-cell">{{ terr.manzano }}</td>
@@ -1753,5 +1841,381 @@
         </div>
     </div>
 </div>
+
+<!-- ========== MODALES AJAX ========== -->
+<!-- Modal Genérico para Asistencias -->
+<div class="modal fade" id="modalAsistencias" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-calendar-check me-2"></i>
+                    Historial de Asistencias - <span id="nombreDuenoAsistencias"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="loadingAsistencias" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Cargando asistencias...</p>
+                </div>
+                
+                <div id="contentAsistencias" style="display: none;">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th><i class="fas fa-calendar-alt me-2"></i>Reunión</th>
+                                    <th><i class="fas fa-clock me-2"></i>Fecha/Hora</th>
+                                    <th><i class="fas fa-user-check me-2"></i>Estado</th>
+                                    <th><i class="fas fa-exclamation-triangle me-2"></i>Multa</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaAsistencias">
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="sinAsistencias" class="text-center py-4" style="display: none;">
+                        <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Sin registros de asistencia</h5>
+                        <p class="text-muted">Este propietario no tiene asistencias registradas</p>
+                    </div>
+                </div>
+                
+                <!-- Total de deuda por multas de asistencia -->
+                <div class="modal-footer bg-light">
+                    <div class="w-100 d-flex justify-content-between align-items-center">
+                        <strong class="text-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Total multas por inasistencia:
+                        </strong>
+                        <strong class="text-danger fs-5" id="totalDeudaAsistencias">
+                            Bs. 0.00
+                        </strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Genérico para Terrenos -->
+<div class="modal fade" id="modalTerrenos" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-map me-2"></i>
+                    Terrenos - <span id="nombreDuenoTerrenos"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="loadingTerrenos" class="text-center py-5">
+                    <div class="spinner-border text-success" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Cargando terrenos...</p>
+                </div>
+                
+                <div id="contentTerrenos" style="display: none;">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th><i class="fas fa-hashtag me-2"></i>Lote</th>
+                                    <th><i class="fas fa-ruler me-2"></i>Superficie</th>
+                                    <th><i class="fas fa-map-marker-alt me-2"></i>Manzana</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaTerrenos">
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="sinTerrenos" class="text-center py-4" style="display: none;">
+                        <i class="fas fa-map-marked-alt fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Sin terrenos registrados</h5>
+                        <p class="text-muted">Este propietario no tiene terrenos asignados</p>
+                    </div>
+                </div>
+                
+                <!-- Total de deuda (terrenos no generan deuda directa) -->
+                <div class="modal-footer bg-light">
+                    <div class="w-100 text-center">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Los terrenos no generan deuda directa. Ver aportes para deudas pendientes.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Genérico para Cuotas -->
+<div class="modal fade" id="modalCuotas" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-money-bill-wave me-2"></i>
+                    Aportes - <span id="nombreDuenoCuotas"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="loadingCuotas" class="text-center py-5">
+                    <div class="spinner-border text-warning" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Cargando aportes...</p>
+                </div>
+                
+                <div id="contentCuotas" style="display: none;">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th><i class="fas fa-dollar-sign me-2"></i>Monto</th>
+                                    <th><i class="fas fa-check-circle me-2"></i>Estado</th>
+                                    <th><i class="fas fa-info-circle me-2"></i>Descripción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaCuotas">
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="sinCuotas" class="text-center py-4" style="display: none;">
+                        <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Sin aportes registrados</h5>
+                        <p class="text-muted">Este propietario no tiene aportes asignados</p>
+                    </div>
+                </div>
+                
+                <!-- Total de deuda por aportes pendientes -->
+                <div class="modal-footer bg-light">
+                    <div class="w-100 d-flex justify-content-between align-items-center">
+                        <strong class="text-danger">
+                            <i class="fas fa-dollar-sign me-2"></i>
+                            Total deuda pendiente:
+                        </strong>
+                        <strong class="text-danger fs-5" id="totalDeudaCuotas">
+                            Bs. 0.00
+                        </strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript para cargar datos AJAX -->
+<script>
+// Event listeners para los botones
+document.addEventListener('DOMContentLoaded', function() {
+    // Botones de Asistencias
+    document.querySelectorAll('.btn-asistencias').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const duenoId = this.dataset.duenoId;
+            const duenoNombre = this.dataset.duenoNombre;
+            cargarAsistencias(duenoId, duenoNombre);
+        });
+    });
+    
+    // Botones de Terrenos
+    document.querySelectorAll('.btn-terrenos').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const duenoId = this.dataset.duenoId;
+            const duenoNombre = this.dataset.duenoNombre;
+            cargarTerrenos(duenoId, duenoNombre);
+        });
+    });
+    
+    // Botones de Cuotas
+    document.querySelectorAll('.btn-cuotas').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const duenoId = this.dataset.duenoId;
+            const duenoNombre = this.dataset.duenoNombre;
+            cargarCuotas(duenoId, duenoNombre);
+        });
+    });
+});
+
+// Función para cargar asistencias
+function cargarAsistencias(duenoId, nombreDueno) {
+    console.log('Cargando asistencias para:', duenoId, nombreDueno); // Debug
+    
+    // Mostrar modal y loading
+    document.getElementById('nombreDuenoAsistencias').textContent = nombreDueno;
+    document.getElementById('loadingAsistencias').style.display = 'block';
+    document.getElementById('contentAsistencias').style.display = 'none';
+    
+    const modal = new bootstrap.Modal(document.getElementById('modalAsistencias'));
+    modal.show();
+    
+    // Hacer petición AJAX
+    fetch(`/api/dueno/${duenoId}/asistencias`)
+        .then(response => {
+            console.log('Response status:', response.status); // Debug
+            return response.json();
+        })
+        .then(data => {
+            console.log('Data received:', data); // Debug
+            document.getElementById('loadingAsistencias').style.display = 'none';
+            document.getElementById('contentAsistencias').style.display = 'block';
+            
+            if (data.success && data.asistencias.length > 0) {
+                const tbody = document.getElementById('tablaAsistencias');
+                tbody.innerHTML = '';
+                
+                data.asistencias.forEach(asistencia => {
+                    // Formatear el texto de la multa
+                    const multaTexto = asistencia.multa_monto && asistencia.multa_monto > 0 
+                        ? `<span class="text-danger fw-bold">Bs. ${asistencia.multa_monto.toFixed(2)}</span>` 
+                        : '<span class="text-muted">-</span>';
+                    
+                    const row = `
+                        <tr>
+                            <td>${asistencia.reunion.tema}</td>
+                            <td>${asistencia.reunion.fecha} ${asistencia.reunion.hora}</td>
+                            <td>
+                                <span class="badge ${asistencia.presente ? 'bg-success' : 'bg-danger'}">
+                                    <i class="fas ${asistencia.presente ? 'fa-check' : 'fa-times'} me-1"></i>
+                                    ${asistencia.presente ? 'Presente' : 'Ausente'}
+                                </span>
+                            </td>
+                            <td>${multaTexto}</td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+                
+                document.getElementById('sinAsistencias').style.display = 'none';
+            } else {
+                document.getElementById('sinAsistencias').style.display = 'block';
+            }
+            
+            // Actualizar total de deuda por multas de asistencia
+            const totalDeuda = data.total_deuda || 0;
+            document.getElementById('totalDeudaAsistencias').textContent = `Bs. ${totalDeuda.toFixed(2)}`;
+        })
+        .catch(error => {
+            console.error('Error:', error); // Debug
+            document.getElementById('loadingAsistencias').style.display = 'none';
+            alert('Error al cargar las asistencias: ' + error.message);
+        });
+}
+
+// Función para cargar terrenos
+function cargarTerrenos(duenoId, nombreDueno) {
+    console.log('Cargando terrenos para:', duenoId, nombreDueno); // Debug
+    
+    document.getElementById('nombreDuenoTerrenos').textContent = nombreDueno;
+    document.getElementById('loadingTerrenos').style.display = 'block';
+    document.getElementById('contentTerrenos').style.display = 'none';
+    
+    const modal = new bootstrap.Modal(document.getElementById('modalTerrenos'));
+    modal.show();
+    
+    fetch(`/api/dueno/${duenoId}/terrenos`)
+        .then(response => {
+            console.log('Response status:', response.status); // Debug
+            return response.json();
+        })
+        .then(data => {
+            console.log('Data received:', data); // Debug
+            document.getElementById('loadingTerrenos').style.display = 'none';
+            document.getElementById('contentTerrenos').style.display = 'block';
+            
+            if (data.success && data.terrenos.length > 0) {
+                const tbody = document.getElementById('tablaTerrenos');
+                tbody.innerHTML = '';
+                
+                data.terrenos.forEach(terreno => {
+                    const row = `
+                        <tr>
+                            <td><strong>${terreno.numero_lote}</strong></td>
+                            <td>${terreno.superficie} m²</td>
+                            <td>${terreno.ubicacion || '-'}</td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+                
+                document.getElementById('sinTerrenos').style.display = 'none';
+            } else {
+                document.getElementById('sinTerrenos').style.display = 'block';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error); // Debug
+            document.getElementById('loadingTerrenos').style.display = 'none';
+            alert('Error al cargar los terrenos: ' + error.message);
+        });
+}
+
+// Función para cargar cuotas
+function cargarCuotas(duenoId, nombreDueno) {
+    console.log('Cargando cuotas para:', duenoId, nombreDueno); // Debug
+    
+    document.getElementById('nombreDuenoCuotas').textContent = nombreDueno;
+    document.getElementById('loadingCuotas').style.display = 'block';
+    document.getElementById('contentCuotas').style.display = 'none';
+    
+    const modal = new bootstrap.Modal(document.getElementById('modalCuotas'));
+    modal.show();
+    
+    fetch(`/api/dueno/${duenoId}/cuotas`)
+        .then(response => {
+            console.log('Response status:', response.status); // Debug
+            return response.json();
+        })
+        .then(data => {
+            console.log('Data received:', data); // Debug
+            document.getElementById('loadingCuotas').style.display = 'none';
+            document.getElementById('contentCuotas').style.display = 'block';
+            
+            if (data.success && data.cuotas.length > 0) {
+                const tbody = document.getElementById('tablaCuotas');
+                tbody.innerHTML = '';
+                
+                data.cuotas.forEach(cuota => {
+                    const estadoBadge = cuota.estado === 'pagado' ? 'bg-success' : 'bg-warning';
+                    const row = `
+                        <tr>
+                            <td><strong>Bs. ${cuota.monto.toFixed(2)}</strong></td>
+                            <td>
+                                <span class="badge ${estadoBadge}">
+                                    ${cuota.estado.charAt(0).toUpperCase() + cuota.estado.slice(1)}
+                                </span>
+                            </td>
+                            <td>${cuota.descripcion || '-'}</td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+                
+                document.getElementById('sinCuotas').style.display = 'none';
+            } else {
+                document.getElementById('sinCuotas').style.display = 'block';
+            }
+            
+            // Actualizar total de deuda por cuotas/aportes pendientes
+            const totalDeuda = data.total_deuda || 0;
+            document.getElementById('totalDeudaCuotas').textContent = `Bs. ${totalDeuda.toFixed(2)}`;
+        })
+        .catch(error => {
+            console.error('Error:', error); // Debug
+            document.getElementById('loadingCuotas').style.display = 'none';
+            alert('Error al cargar los aportes: ' + error.message);
+        });
+}
+</script>
 
 {% endblock %}

@@ -4,13 +4,12 @@ from flask_login import current_user
 
 # La función `list_terrenos` recibe un objeto paginado de
 # terrenos y renderiza el template `terrenos.html` 
-def list_terrenos(terrenos_paginated, search="", estadisticas=None):
+def list_terrenos(terrenos_paginated, search=""):
     return render_template(
         "terrenos.html",
         terrenos_paginated=terrenos_paginated,
         terrenos=terrenos_paginated.items,  # Mantener compatibilidad
         search=search,
-        estadisticas=estadisticas,  # Estadísticas globales
         title="Lista de terrenos",
         current_user=current_user,
     )

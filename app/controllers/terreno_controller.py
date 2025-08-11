@@ -42,27 +42,7 @@ def list_terrenos():
         error_out=False
     )
     
-    # Calcular estadísticas globales (de todos los terrenos, no solo de la página actual)
-    if search:
-        # Si hay búsqueda, calcular estadísticas de los resultados filtrados
-        total_query = query
-    else:
-        # Si no hay búsqueda, calcular estadísticas de todos los terrenos
-        total_query = db.session.query(Terreno).join(Duenio)
-    
-    # Estadísticas globales
-    total_terrenos = total_query.count()
-    total_metros = total_query.with_entities(db.func.sum(Terreno.metros_cuadrados)).scalar() or 0
-    manzanos_unicos = total_query.with_entities(Terreno.manzano).distinct().count()
-    
-    # Redondear los metros cuadrados para evitar decimales largos
-    total_metros = round(float(total_metros), 2)
-    
-    return terreno_view.list_terrenos(terrenos_paginated, search, {
-        'total_terrenos': total_terrenos,
-        'total_metros': total_metros,
-        'manzanos_unicos': manzanos_unicos
-    })
+    return terreno_view.list_terrenos(terrenos_paginated, search)
      
 # Ruta para crear terrenos
 @terreno_bp.route("/terrenos/create", methods=["GET", "POST"])
