@@ -136,8 +136,8 @@
                                                 <i class="fas fa-edit"></i> Editar
                                             </a>
                                             <form method="post" action="{{ url_for('reunion.delete_reunion', id=reunion.id) }}" style="display: inline;">
-                                                <button type="submit" class="btn btn-danger btn-sm"
-                                                        onclick="return confirm('¿Está seguro de eliminar la reunión \'{{ reunion.descripcion }}\'?')">
+                                                <button type="button" class="btn btn-danger btn-sm"
+                                                        onclick="eliminarReunionConProgreso({{ reunion.id }}, '{{ reunion.descripcion }}', '{{ reunion.descripcion }}')">
                                                     <i class="fas fa-trash"></i> Eliminar
                                                 </button>
                                             </form>
@@ -161,6 +161,55 @@
     </div>
 </div>
 
+<!-- Modal de progreso para eliminación de reuniones -->
+<div class="modal fade" id="deleteReunionProgressModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-trash-alt"></i> Eliminando Reunión
+                </h5>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <i class="fas fa-calendar-times fa-3x text-warning mb-3"></i>
+                    <h6 id="deleteReunionMessage">Eliminando reunión: <span id="deleteReunionTema"></span></h6>
+                    <p class="text-muted mb-2">
+                        Esta operación eliminará la reunión y todos los datos asociados (asistencias, multas).
+                    </p>
+                </div>
+                <div class="progress mb-3" style="height: 25px;">
+                    <div id="deleteReunionProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-danger" 
+                         role="progressbar" style="width: 0%">
+                        <span id="deleteReunionProgressText">Iniciando...</span>
+                    </div>
+                </div>
+                <small class="text-muted d-block text-center" id="deleteReunionProgressDetails">
+                    Preparando eliminación...
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de resultado para eliminación de reuniones -->
+<div class="modal fade" id="deleteReunionResultModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" id="deleteReunionResultHeader">
+                <h5 class="modal-title" id="deleteReunionResultTitle"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="deleteReunionResultMessage"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
 .table-hover tbody tr:hover {
     background-color: rgba(23, 162, 184, 0.1);
@@ -177,9 +226,203 @@
 .badge {
     font-size: 0.75em;
 }
+
+/* Estilos para la barra de progreso de eliminación de reuniones */
+#deleteReunionProgressBar {
+    transition: width 0.4s ease;
+    background: linear-gradient(45deg, #dc3545, #e74c3c);
+}
+
+#deleteReunionProgressModal .modal-content {
+    animation: slideInDown 0.4s ease;
+}
+
+@keyframes slideInDown {
+    from { 
+        opacity: 0; 
+        transform: translateY(-50px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+#deleteReunionResultModal .modal-content {
+    animation: zoomIn 0.3s ease;
+}
+
+@keyframes zoomIn {
+    from { 
+        opacity: 0; 
+        transform: scale(0.8); 
+    }
+    to { 
+        opacity: 1; 
+        transform: scale(1); 
+    }
+}
 </style>
 
 <script>
     document.querySelector('.btn-info').setAttribute('onclick', "searchTable('reunionesTable')");
+
+    // Función para eliminar reunión con barra de progreso
+    function eliminarReunionConProgreso(reunionId, descripcion, descripcionCompleta) {
+        const mensaje = `¿Está seguro de eliminar la reunión "${descripcion}"?
+
+📋 INFORMACIÓN:
+• Descripción: ${descripcionCompleta || 'Sin descripción'}
+
+⚠️ ADVERTENCIA:
+Esta acción eliminará:
+• La reunión completa
+• Todas las asistencias registradas
+• Todas las multas asociadas
+
+Esta operación NO SE PUEDE DESHACER.
+
+¿Desea continuar?`;
+        
+        if (confirm(mensaje)) {
+            ejecutarEliminacionReunion(reunionId, descripcion);
+        }
+    }
+
+    async function ejecutarEliminacionReunion(reunionId, descripcion) {
+        // Mostrar modal de progreso
+        document.getElementById('deleteReunionTema').textContent = descripcion;
+        
+        const progressModal = new bootstrap.Modal(document.getElementById('deleteReunionProgressModal'));
+        progressModal.show();
+        
+        // Elementos del progreso
+        const progressBar = document.getElementById('deleteReunionProgressBar');
+        const progressText = document.getElementById('deleteReunionProgressText');
+        const progressDetails = document.getElementById('deleteReunionProgressDetails');
+        
+        // Simular progreso mientras se procesa
+        let progress = 0;
+        progressText.textContent = 'Iniciando eliminación...';
+        progressDetails.textContent = 'Conectando con el servidor...';
+        
+        const progressInterval = setInterval(() => {
+            progress += Math.random() * 18;
+            if (progress > 90) progress = 90;
+            
+            progressBar.style.width = progress + '%';
+            progressText.textContent = `${Math.round(progress)}%`;
+            
+            if (progress < 25) {
+                progressDetails.textContent = 'Eliminando asistencias asociadas...';
+            } else if (progress < 50) {
+                progressDetails.textContent = 'Eliminando multas asociadas...';
+            } else if (progress < 80) {
+                progressDetails.textContent = 'Eliminando reunión principal...';
+            } else {
+                progressDetails.textContent = 'Finalizando operación...';
+            }
+        }, 300);
+        
+        try {
+            // Enviar petición AJAX optimizada
+            const response = await fetch('/api/reuniones/delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ reunion_id: reunionId })
+            });
+            
+            const result = await response.json();
+            
+            // Completar barra de progreso
+            clearInterval(progressInterval);
+            progressBar.style.width = '100%';
+            progressText.textContent = '100%';
+            progressDetails.textContent = 'Operación completada!';
+            
+            // Esperar un momento antes de mostrar el resultado
+            setTimeout(() => {
+                progressModal.hide();
+                
+                // Mostrar resultado
+                const resultModal = new bootstrap.Modal(document.getElementById('deleteReunionResultModal'));
+                const resultHeader = document.getElementById('deleteReunionResultHeader');
+                const resultTitle = document.getElementById('deleteReunionResultTitle');
+                const resultMessage = document.getElementById('deleteReunionResultMessage');
+                
+                if (result.success) {
+                    resultHeader.className = 'modal-header bg-success text-white';
+                    resultTitle.innerHTML = '<i class="fas fa-check-circle me-2"></i>Reunión Eliminada';
+                    resultMessage.innerHTML = `
+                        <div class="alert alert-success">
+                            <h6><i class="fas fa-check-circle"></i> ¡Operación completada con éxito!</h6>
+                            <p class="mb-2">${result.message}</p>
+                            <div class="row mt-3">
+                                <div class="col-4 text-center">
+                                    <div class="border p-2 rounded">
+                                        <strong class="text-primary">1</strong>
+                                        <br><small class="text-muted">Reunión</small>
+                                    </div>
+                                </div>
+                                <div class="col-4 text-center">
+                                    <div class="border p-2 rounded">
+                                        <strong class="text-info">${result.asistencias_eliminadas}</strong>
+                                        <br><small class="text-muted">Asistencias</small>
+                                    </div>
+                                </div>
+                                <div class="col-4 text-center">
+                                    <div class="border p-2 rounded">
+                                        <strong class="text-warning">${result.multas_eliminadas}</strong>
+                                        <br><small class="text-muted">Multas</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Recargar página después de un momento
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    resultHeader.className = 'modal-header bg-danger text-white';
+                    resultTitle.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Error en la Eliminación';
+                    resultMessage.innerHTML = `
+                        <div class="alert alert-danger">
+                            <h6><i class="fas fa-exclamation-triangle"></i> Ocurrió un error</h6>
+                            <p class="mb-0">${result.error}</p>
+                        </div>
+                    `;
+                }
+                
+                resultModal.show();
+            }, 1000);
+            
+        } catch (error) {
+            clearInterval(progressInterval);
+            console.error('Error:', error);
+            
+            progressModal.hide();
+            
+            // Mostrar error
+            const resultModal = new bootstrap.Modal(document.getElementById('deleteReunionResultModal'));
+            const resultHeader = document.getElementById('deleteReunionResultHeader');
+            const resultTitle = document.getElementById('deleteReunionResultTitle');
+            const resultMessage = document.getElementById('deleteReunionResultMessage');
+            
+            resultHeader.className = 'modal-header bg-danger text-white';
+            resultTitle.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Error de Conexión';
+            resultMessage.innerHTML = `
+                <div class="alert alert-danger">
+                    <h6><i class="fas fa-wifi"></i> Error de conexión</h6>
+                    <p class="mb-0">No se pudo conectar con el servidor: ${error.message}</p>
+                </div>
+            `;
+            
+            resultModal.show();
+        }
+    }
 </script>
 {% endblock %}

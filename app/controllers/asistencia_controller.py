@@ -8,6 +8,7 @@ from views import asistencia_view
 from utils.decorators import role_required
 from database import db
 from sqlalchemy import or_  # Importar or_ para búsquedas
+from controllers.multa_controller import es_dueno_inmune
 
 asistencia_bp = Blueprint("asistencia", __name__)
 
@@ -191,6 +192,11 @@ def marcar_asistencia():
 def crear_multa_asistencia(asistencia, monto_multa):
     """Crear multa para asistencia"""
     print(f"[DEBUG] Intentando crear multa - Dueño: {asistencia.duenio_id}, Reunión: {asistencia.id_reunion}, Monto: {monto_multa}")
+    
+    # 🛡️ VERIFICAR INMUNIDAD ETERNA
+    if es_dueno_inmune(asistencia.duenio_id):
+        print(f"🛡️ [INMUNIDAD] Dueño {asistencia.duenio_id} tiene inmunidad eterna - No se crea multa por asistencia")
+        return
     
     multa_existente = Multa.query.filter_by(
         duenio_id=asistencia.duenio_id,

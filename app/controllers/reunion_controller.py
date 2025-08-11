@@ -1,6 +1,7 @@
 from flask import Blueprint, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from datetime import datetime
+from sqlalchemy import text
 from models.reunion_model import Reunion
 from models.duenio_model import Duenio
 from models.asistencia_model import Asistencia
@@ -8,6 +9,7 @@ from models.multa_model import Multa
 from views import reunion_view
 from utils.decorators import role_required
 from database import db
+from controllers.multa_controller import es_dueno_inmune
 
 reunion_bp = Blueprint("reunion", __name__)
 
@@ -43,6 +45,11 @@ def create_reunion():
                 
                 # Crear multa usando el monto de la reunión (si > 0)
                 if reunion.monto_multa > 0:
+                    # 🛡️ VERIFICAR INMUNIDAD ETERNA
+                    if es_dueno_inmune(duenio.id):
+                        print(f"🛡️ [INMUNIDAD] Dueño {duenio.nombre} {duenio.paterno} (ID={duenio.id}) tiene inmunidad eterna - No se crea multa por reunión")
+                        continue
+                        
                     multa = Multa(
                         duenio_id=duenio.id,
                         reunion_id=reunion.id,
@@ -57,6 +64,75 @@ def create_reunion():
         else:
             return jsonify({"message": "Unauthorized"}), 403
     return reunion_view.create_reunion()
+
+# Endpoint AJAX para crear reuniones con progreso
+@reunion_bp.route("/api/reuniones/create", methods=["POST"])
+@login_required
+@role_required("admin")
+def create_reunion_ajax():
+    try:
+        # Obtener datos del formulario
+        data = request.get_json()
+        fecha_str = data["fecha"]
+        hora_str = data["hora"]
+        descripcion = data.get("descripcion", "")
+        monto_multa = float(data.get("monto_multa", 100.0))
+        
+        # Crear la reunión
+        fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
+        hora = datetime.strptime(hora_str, "%H:%M").time()
+        reunion = Reunion(fecha=fecha, hora=hora, descripcion=descripcion, monto_multa=monto_multa)
+        reunion.save()
+        
+        # Obtener todos los dueños
+        duenios = Duenio.query.all()
+        total_duenios = len(duenios)
+        
+        # Procesar en lotes de 50 para evitar timeouts
+        lote_size = 50
+        procesados = 0
+        
+        for i in range(0, total_duenios, lote_size):
+            lote_duenios = duenios[i:i + lote_size]
+            
+            # Crear asistencias y multas para este lote
+            for duenio in lote_duenios:
+                # Crear asistencia
+                asistencia = Asistencia(duenio_id=duenio.id, id_reunion=reunion.id)
+                db.session.add(asistencia)
+                
+                # Crear multa si corresponde
+                if reunion.monto_multa > 0:
+                    # 🛡️ VERIFICAR INMUNIDAD ETERNA
+                    if es_dueno_inmune(duenio.id):
+                        print(f"🛡️ [INMUNIDAD AJAX] Dueño {duenio.nombre} {duenio.paterno} (ID={duenio.id}) tiene inmunidad eterna - No se crea multa")
+                        procesados += 1
+                        continue
+                        
+                    multa = Multa(
+                        duenio_id=duenio.id,
+                        reunion_id=reunion.id,
+                        monto=reunion.monto_multa,
+                        tipo='asistencia',
+                        descripcion=f'Multa por no asistir a reunión {reunion.id}'
+                    )
+                    db.session.add(multa)
+                
+                procesados += 1
+            
+            # Commit del lote
+            db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": f"Reunión creada exitosamente. Se procesaron {procesados} propietarios.",
+            "reunion_id": reunion.id,
+            "total_procesados": procesados
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
 
 # Ruta para actualizar reuniones por ID
 @reunion_bp.route("/reuniones/<int:id>/update", methods=["GET", "POST"])
@@ -91,6 +167,61 @@ def update_reunion(id):
             return jsonify({"message": "Unauthorized"}), 403
     
     return reunion_view.update_reunion(reunion)
+
+# Endpoint AJAX optimizado para eliminar reuniones
+@reunion_bp.route("/api/reuniones/delete", methods=["POST"])
+def delete_reunion_ajax():
+    try:
+        data = request.get_json()
+        reunion_id = data.get("reunion_id")
+        
+        if not reunion_id:
+            return jsonify({"success": False, "error": "ID de reunión es requerido"}), 400
+        
+        # Verificar que la reunión existe y obtener su información ANTES de eliminar
+        reunion = Reunion.get_by_id(reunion_id)
+        if not reunion:
+            return jsonify({"success": False, "error": f"No se encontró la reunión con ID {reunion_id}"}), 404
+        
+        # Capturar información de la reunión ANTES de eliminar
+        reunion_descripcion = reunion.descripcion or f"Reunión {reunion_id}"
+        
+        # Obtener conteos antes de eliminar
+        multas_count = Multa.query.filter_by(reunion_id=reunion_id).count()
+        asistencias_count = Asistencia.query.filter_by(id_reunion=reunion_id).count()
+        
+        # Eliminación optimizada masiva usando SQL crudo
+        # 1. Primero eliminar multas asociadas a la reunión
+        db.session.execute(
+            text("DELETE FROM Multa WHERE reunion_id = :reunion_id"), 
+            {"reunion_id": reunion_id}
+        )
+        
+        # 2. Eliminar asistencias asociadas a la reunión
+        db.session.execute(
+            text("DELETE FROM Asistencia WHERE id_reunion = :reunion_id"), 
+            {"reunion_id": reunion_id}
+        )
+        
+        # 3. Finalmente eliminar la reunión
+        db.session.execute(
+            text("DELETE FROM Reunion WHERE id = :reunion_id"), 
+            {"reunion_id": reunion_id}
+        )
+        
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": f"Reunión '{reunion_descripcion}' eliminada exitosamente.",
+            "multas_eliminadas": multas_count,
+            "asistencias_eliminadas": asistencias_count,
+            "reunion_descripcion": reunion_descripcion
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
 
 # Ruta para eliminar reuniones por ID
 @reunion_bp.route("/reuniones/<int:id>/delete", methods=["POST"])

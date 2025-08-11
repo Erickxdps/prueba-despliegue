@@ -34,7 +34,7 @@ login_manager.init_app(app)
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 db.init_app(app)
 app.register_blueprint(user_controller.user_bp)

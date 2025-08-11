@@ -81,7 +81,7 @@
                         </div>
 
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary btn-lg">
+                            <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
                                 <i class="fas fa-save"></i> Crear Cuota
                             </button>
                             <a href="{{ url_for('cuota.list_cuotas') }}" class="btn btn-secondary">
@@ -89,13 +89,205 @@
                             </a>
                         </div>
                     </form>
+
+                    <!-- Barra de progreso (inicialmente oculta) -->
+                    <div id="progressContainer" style="display: none;" class="mt-4">
+                        <div class="card border-primary">
+                            <div class="card-body">
+                                <h5 class="card-title text-primary">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>
+                                    Creando cuota...
+                                </h5>
+                                <p class="card-text mb-2">
+                                    Se está aplicando la cuota a todos los terrenos ({{ terrenos|length }} terrenos). Este proceso puede tomar varios minutos.
+                                </p>
+                                <div class="progress mb-3" style="height: 30px;">
+                                    <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" 
+                                         role="progressbar" style="width: 0%">
+                                        <span id="progressText">Iniciando...</span>
+                                    </div>
+                                </div>
+                                <small class="text-muted" id="progressDetails">
+                                    Preparando datos...
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resultado (inicialmente oculto) -->
+                    <div id="resultContainer" style="display: none;" class="mt-4">
+                        <div id="resultAlert" class="alert" role="alert">
+                            <span id="resultMessage"></span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+<script>
+    // Manejar envío del formulario con AJAX
+    document.querySelector('form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Obtener datos del formulario
+        const formData = new FormData(this);
+        const data = {
+            titulo: formData.get('titulo'),
+            descripcion: formData.get('descripcion') || '',
+            monto: parseFloat(formData.get('monto'))
+        };
+        
+        // Validación básica
+        if (!data.titulo || !data.monto || data.monto <= 0) {
+            alert('Por favor complete todos los campos requeridos correctamente.');
+            return;
+        }
+        
+        // Mostrar barra de progreso
+        document.getElementById('progressContainer').style.display = 'block';
+        document.getElementById('resultContainer').style.display = 'none';
+        
+        // Deshabilitar formulario
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Procesando...';
+        
+        // Simular progreso mientras se procesa
+        let progress = 0;
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const progressDetails = document.getElementById('progressDetails');
+        
+        // Actualizar progreso gradualmente
+        progressText.textContent = 'Creando cuota...';
+        progressDetails.textContent = 'Iniciando proceso de creación...';
+        
+        const progressInterval = setInterval(() => {
+            progress += Math.random() * 12;
+            if (progress > 90) progress = 90;
+            
+            progressBar.style.width = progress + '%';
+            progressText.textContent = `${Math.round(progress)}%`;
+            
+            if (progress < 25) {
+                progressDetails.textContent = 'Aplicando cuota a terrenos...';
+            } else if (progress < 60) {
+                progressDetails.textContent = 'Generando registros de pagos...';
+            } else if (progress < 85) {
+                progressDetails.textContent = 'Creando multas asociadas...';
+            } else {
+                progressDetails.textContent = 'Finalizando proceso...';
+            }
+        }, 600);
+        
+        try {
+            // Enviar petición AJAX
+            const response = await fetch('/api/cuotas/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            // Completar barra de progreso
+            clearInterval(progressInterval);
+            progressBar.style.width = '100%';
+            progressText.textContent = '100%';
+            progressDetails.textContent = 'Proceso completado!';
+            
+            // Mostrar resultado
+            setTimeout(() => {
+                document.getElementById('progressContainer').style.display = 'none';
+                const resultContainer = document.getElementById('resultContainer');
+                const resultAlert = document.getElementById('resultAlert');
+                const resultMessage = document.getElementById('resultMessage');
+                
+                resultContainer.style.display = 'block';
+                
+                if (result.success) {
+                    resultAlert.className = 'alert alert-success';
+                    resultMessage.innerHTML = `
+                        <i class="fas fa-check-circle me-2"></i>
+                        <strong>¡Éxito!</strong> ${result.message}
+                        <br><small>Se crearon ${result.total_cuotas} cuotas individuales</small>
+                    `;
+                    
+                    // Redirigir después de 3 segundos
+                    setTimeout(() => {
+                        window.location.href = '/cuotas';
+                    }, 3000);
+                } else {
+                    resultAlert.className = 'alert alert-danger';
+                    resultMessage.innerHTML = `
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Error:</strong> ${result.error}
+                    `;
+                }
+            }, 1000);
+            
+        } catch (error) {
+            clearInterval(progressInterval);
+            console.error('Error:', error);
+            
+            document.getElementById('progressContainer').style.display = 'none';
+            const resultContainer = document.getElementById('resultContainer');
+            const resultAlert = document.getElementById('resultAlert');
+            const resultMessage = document.getElementById('resultMessage');
+            
+            resultContainer.style.display = 'block';
+            resultAlert.className = 'alert alert-danger';
+            resultMessage.innerHTML = `
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Error de conexión:</strong> ${error.message}
+            `;
+        } finally {
+            // Rehabilitar formulario
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-save"></i> Crear Cuota';
+        }
+    });
+</script>
+
 <style>
+.progress-bar {
+    transition: width 0.6s ease;
+}
+
+#progressContainer {
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.alert {
+    animation: slideIn 0.5s ease;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.form-control:focus, .btn:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.card {
+    transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
 .form-select:focus, .form-control:focus {
     border-color: #0d6efd;
     box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);

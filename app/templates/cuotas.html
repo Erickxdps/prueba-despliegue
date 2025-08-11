@@ -297,6 +297,55 @@
   </div>
 </div>
 
+<!-- Modal de progreso para eliminación -->
+<div class="modal fade" id="progressModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-trash-alt"></i> Eliminando Cuotas
+                </h5>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                    <h6 id="progressMessage">Eliminando cuotas del tipo: <span id="progressTitulo"></span></h6>
+                    <p class="text-muted mb-2">
+                        Esta operación puede tardar varios segundos dependiendo del número de cuotas.
+                    </p>
+                </div>
+                <div class="progress mb-3" style="height: 25px;">
+                    <div id="deleteProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-danger" 
+                         role="progressbar" style="width: 0%">
+                        <span id="deleteProgressText">Iniciando...</span>
+                    </div>
+                </div>
+                <small class="text-muted d-block text-center" id="deleteProgressDetails">
+                    Preparando eliminación...
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resultado de eliminación -->
+<div class="modal fade" id="deleteResultModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" id="deleteResultHeader">
+                <h5 class="modal-title" id="deleteResultTitle"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="deleteResultMessage"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
 .table-hover tbody tr:hover {
     background-color: rgba(13, 110, 253, 0.1);
@@ -307,6 +356,46 @@
 .avatar {
     font-weight: 600;
     font-size: 11px !important;
+}
+
+/* Estilos para la barra de progreso de eliminación */
+#deleteProgressBar {
+    transition: width 0.4s ease;
+    background: linear-gradient(45deg, #dc3545, #e74c3c);
+}
+
+#progressModal .modal-content {
+    animation: slideInDown 0.4s ease;
+}
+
+@keyframes slideInDown {
+    from { 
+        opacity: 0; 
+        transform: translateY(-50px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+#deleteResultModal .modal-content {
+    animation: zoomIn 0.3s ease;
+}
+
+@keyframes zoomIn {
+    from { 
+        opacity: 0; 
+        transform: scale(0.8); 
+    }
+    to { 
+        opacity: 1; 
+        transform: scale(1); 
+    }
+}
+
+.progress {
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 </style>
 
@@ -556,12 +645,137 @@ Esta operación NO SE PUEDE DESHACER.
 ¿Desea continuar?`;
     
     if (confirm(mensaje)) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/cuotas/delete-by-title/${encodeURIComponent(titulo)}`;
+        eliminarCuotasConProgreso(titulo, totalCuotas, propietariosAfectados);
+    }
+}
+
+async function eliminarCuotasConProgreso(titulo, totalCuotas, propietariosAfectados) {
+    // Mostrar modal de progreso
+    document.getElementById('progressTitulo').textContent = titulo;
+    
+    const progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
+    progressModal.show();
+    
+    // Elementos del progreso
+    const progressBar = document.getElementById('deleteProgressBar');
+    const progressText = document.getElementById('deleteProgressText');
+    const progressDetails = document.getElementById('deleteProgressDetails');
+    
+    // Simular progreso mientras se procesa
+    let progress = 0;
+    progressText.textContent = 'Iniciando eliminación...';
+    progressDetails.textContent = 'Conectando con el servidor...';
+    
+    const progressInterval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress > 90) progress = 90;
         
-        document.body.appendChild(form);
-        form.submit();
+        progressBar.style.width = progress + '%';
+        progressText.textContent = `${Math.round(progress)}%`;
+        
+        if (progress < 20) {
+            progressDetails.textContent = 'Localizando cuotas a eliminar...';
+        } else if (progress < 40) {
+            progressDetails.textContent = 'Eliminando multas asociadas...';
+        } else if (progress < 70) {
+            progressDetails.textContent = 'Eliminando cuotas masivamente...';
+        } else {
+            progressDetails.textContent = 'Finalizando operación...';
+        }
+    }, 400);
+    
+    try {
+        // Enviar petición AJAX optimizada
+        const response = await fetch('/api/cuotas/delete-by-title', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ titulo: titulo })
+        });
+        
+        const result = await response.json();
+        
+        // Completar barra de progreso
+        clearInterval(progressInterval);
+        progressBar.style.width = '100%';
+        progressText.textContent = '100%';
+        progressDetails.textContent = 'Operación completada!';
+        
+        // Esperar un momento antes de mostrar el resultado
+        setTimeout(() => {
+            progressModal.hide();
+            
+            // Mostrar resultado
+            const resultModal = new bootstrap.Modal(document.getElementById('deleteResultModal'));
+            const resultHeader = document.getElementById('deleteResultHeader');
+            const resultTitle = document.getElementById('deleteResultTitle');
+            const resultMessage = document.getElementById('deleteResultMessage');
+            
+            if (result.success) {
+                resultHeader.className = 'modal-header bg-success text-white';
+                resultTitle.innerHTML = '<i class="fas fa-check-circle me-2"></i>Eliminación Exitosa';
+                resultMessage.innerHTML = `
+                    <div class="alert alert-success">
+                        <h6><i class="fas fa-check-circle"></i> ¡Operación completada con éxito!</h6>
+                        <p class="mb-2">${result.message}</p>
+                        <div class="row mt-3">
+                            <div class="col-6 text-center">
+                                <div class="border p-2 rounded">
+                                    <strong class="text-danger">${result.total_eliminadas}</strong>
+                                    <br><small class="text-muted">Cuotas eliminadas</small>
+                                </div>
+                            </div>
+                            <div class="col-6 text-center">
+                                <div class="border p-2 rounded">
+                                    <strong class="text-info">${result.propietarios_afectados}</strong>
+                                    <br><small class="text-muted">Propietarios afectados</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Recargar página después de un momento
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            } else {
+                resultHeader.className = 'modal-header bg-danger text-white';
+                resultTitle.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Error en la Eliminación';
+                resultMessage.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h6><i class="fas fa-exclamation-triangle"></i> Ocurrió un error</h6>
+                        <p class="mb-0">${result.error}</p>
+                    </div>
+                `;
+            }
+            
+            resultModal.show();
+        }, 1000);
+        
+    } catch (error) {
+        clearInterval(progressInterval);
+        console.error('Error:', error);
+        
+        progressModal.hide();
+        
+        // Mostrar error
+        const resultModal = new bootstrap.Modal(document.getElementById('deleteResultModal'));
+        const resultHeader = document.getElementById('deleteResultHeader');
+        const resultTitle = document.getElementById('deleteResultTitle');
+        const resultMessage = document.getElementById('deleteResultMessage');
+        
+        resultHeader.className = 'modal-header bg-danger text-white';
+        resultTitle.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Error de Conexión';
+        resultMessage.innerHTML = `
+            <div class="alert alert-danger">
+                <h6><i class="fas fa-wifi"></i> Error de conexión</h6>
+                <p class="mb-0">No se pudo conectar con el servidor: ${error.message}</p>
+            </div>
+        `;
+        
+        resultModal.show();
     }
 }
 </script>

@@ -4,8 +4,34 @@ from models.multa_model import Multa
 from models.duenio_model import Duenio
 from views import multa_view
 from utils.decorators import role_required
+from database import db
 
 multa_bp = Blueprint("multa", __name__)
+
+# ===== INMUNIDAD ETERNA PARA LA JUNTA DE VECINOS =====
+def es_dueno_inmune(duenio_id):
+    """
+    Verifica si un dueño tiene inmunidad eterna contra multas.
+    La JUNTA DE VECINOS (ID=12, CI=555) no puede multarse a sí misma.
+    """
+    try:
+        dueno = Duenio.query.get(duenio_id)
+        if not dueno:
+            return False
+            
+        # Verificar si es la JUNTA DE VECINOS
+        # Criterios: ID=12 O CI=555 O (nombre="JUNTA DE" AND paterno="VECINOS")
+        if (dueno.id == 12 or 
+            dueno.ci == "555" or 
+            (dueno.nombre and dueno.nombre.upper() == "JUNTA DE" and 
+             dueno.paterno and dueno.paterno.upper() == "VECINOS")):
+            print(f"🛡️ [INMUNIDAD] Dueño {dueno.nombre} {dueno.paterno} (ID={dueno.id}, CI={dueno.ci}) tiene INMUNIDAD ETERNA contra multas")
+            return True
+            
+        return False
+    except Exception as e:
+        print(f"❌ [ERROR] Error al verificar inmunidad: {e}")
+        return False
 
 # Ruta para obtener la lista de multas
 @multa_bp.route("/multas")
@@ -25,6 +51,12 @@ def create_multa():
             monto = float(request.form["monto"])
             tipo = request.form["tipo"]
             descripcion = request.form.get("descripcion", "")
+            
+            # 🛡️ VERIFICAR INMUNIDAD ETERNA
+            if es_dueno_inmune(duenio_id):
+                flash("❌ No se puede multar a la JUNTA DE VECINOS. Inmunidad eterna activada.", "error")
+                duenios = Duenio.query.all()
+                return render_template('create_multa.html', duenios=duenios)
             
             multa = Multa(
                 duenio_id=duenio_id,

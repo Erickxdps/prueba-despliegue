@@ -81,6 +81,37 @@
                             </button>
                         </div>
                     </form>
+
+                    <!-- Barra de progreso (inicialmente oculta) -->
+                    <div id="progressContainer" style="display: none;" class="mt-4">
+                        <div class="card border-info">
+                            <div class="card-body">
+                                <h5 class="card-title text-info">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>
+                                    Creando reunión...
+                                </h5>
+                                <p class="card-text mb-2">
+                                    Este proceso puede tomar varios minutos ya que se están creando registros para todos los propietarios.
+                                </p>
+                                <div class="progress mb-3" style="height: 30px;">
+                                    <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-info" 
+                                         role="progressbar" style="width: 0%">
+                                        <span id="progressText">Iniciando...</span>
+                                    </div>
+                                </div>
+                                <small class="text-muted" id="progressDetails">
+                                    Preparando datos...
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resultado (inicialmente oculto) -->
+                    <div id="resultContainer" style="display: none;" class="mt-4">
+                        <div id="resultAlert" class="alert" role="alert">
+                            <span id="resultMessage"></span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -88,6 +119,126 @@
 </div>
 
 <script>
+    // Manejar envío del formulario con AJAX
+    document.getElementById('reunionForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Obtener datos del formulario
+        const formData = new FormData(this);
+        const data = {
+            fecha: formData.get('fecha'),
+            hora: formData.get('hora'),
+            descripcion: formData.get('descripcion'),
+            monto_multa: formData.get('monto_multa') || 100.0
+        };
+        
+        // Mostrar barra de progreso
+        document.getElementById('progressContainer').style.display = 'block';
+        document.getElementById('resultContainer').style.display = 'none';
+        
+        // Deshabilitar formulario
+        const submitBtn = document.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Procesando...';
+        
+        // Simular progreso mientras se procesa
+        let progress = 0;
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const progressDetails = document.getElementById('progressDetails');
+        
+        // Actualizar progreso gradualmente
+        progressText.textContent = 'Creando reunión...';
+        progressDetails.textContent = 'Iniciando proceso de creación...';
+        
+        const progressInterval = setInterval(() => {
+            progress += Math.random() * 15;
+            if (progress > 90) progress = 90;
+            
+            progressBar.style.width = progress + '%';
+            progressText.textContent = `${Math.round(progress)}%`;
+            
+            if (progress < 30) {
+                progressDetails.textContent = 'Creando reunión base...';
+            } else if (progress < 60) {
+                progressDetails.textContent = 'Creando registros de asistencia...';
+            } else if (progress < 85) {
+                progressDetails.textContent = 'Generando multas por inasistencia...';
+            } else {
+                progressDetails.textContent = 'Finalizando proceso...';
+            }
+        }, 500);
+        
+        try {
+            // Enviar petición AJAX
+            const response = await fetch('/api/reuniones/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            // Completar barra de progreso
+            clearInterval(progressInterval);
+            progressBar.style.width = '100%';
+            progressText.textContent = '100%';
+            progressDetails.textContent = 'Proceso completado!';
+            
+            // Mostrar resultado
+            setTimeout(() => {
+                document.getElementById('progressContainer').style.display = 'none';
+                const resultContainer = document.getElementById('resultContainer');
+                const resultAlert = document.getElementById('resultAlert');
+                const resultMessage = document.getElementById('resultMessage');
+                
+                resultContainer.style.display = 'block';
+                
+                if (result.success) {
+                    resultAlert.className = 'alert alert-success';
+                    resultMessage.innerHTML = `
+                        <i class="fas fa-check-circle me-2"></i>
+                        <strong>¡Éxito!</strong> ${result.message}
+                        <br><small>Se procesaron ${result.total_procesados} propietarios</small>
+                    `;
+                    
+                    // Redirigir después de 3 segundos
+                    setTimeout(() => {
+                        window.location.href = '/reuniones';
+                    }, 3000);
+                } else {
+                    resultAlert.className = 'alert alert-danger';
+                    resultMessage.innerHTML = `
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Error:</strong> ${result.error}
+                    `;
+                }
+            }, 1000);
+            
+        } catch (error) {
+            clearInterval(progressInterval);
+            console.error('Error:', error);
+            
+            document.getElementById('progressContainer').style.display = 'none';
+            const resultContainer = document.getElementById('resultContainer');
+            const resultAlert = document.getElementById('resultAlert');
+            const resultMessage = document.getElementById('resultMessage');
+            
+            resultContainer.style.display = 'block';
+            resultAlert.className = 'alert alert-danger';
+            resultMessage.innerHTML = `
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Error de conexión:</strong> ${error.message}
+            `;
+        } finally {
+            // Rehabilitar formulario
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-calendar-plus me-2"></i>Crear Reunión';
+        }
+    });
+    
     // Permitir fechas pasadas y futuras para registrar reuniones históricas
     // Se ha removido la restricción de fecha mínima para permitir anotaciones de reuniones pasadas
 </script>
