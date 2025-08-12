@@ -237,25 +237,25 @@ def delete_reunion(id):
         try:
             # Eliminar multas asociadas a esta reunión
             multas = Multa.query.filter_by(reunion_id=id).all()
-            print(f"DEBUG: Encontradas {len(multas)} multas para eliminar con reunion_id={id}")
+
             for multa in multas:
-                print(f"DEBUG: Eliminando multa ID={multa.multa_id}, duenio_id={multa.duenio_id}")
+
                 db.session.delete(multa)
             
             # Eliminar asistencias asociadas
             asistencias = Asistencia.query.filter_by(id_reunion=id).all()
-            print(f"DEBUG: Encontradas {len(asistencias)} asistencias para eliminar con id_reunion={id}")
+
             for asistencia in asistencias:
-                print(f"DEBUG: Eliminando asistencia ID={asistencia.id}, duenio_id={asistencia.duenio_id}")
+
                 db.session.delete(asistencia)
             
             # Eliminar reunión
-            print(f"DEBUG: Eliminando reunión ID={reunion.id}")
+
             db.session.delete(reunion)
             
             # Confirmar todos los cambios
             db.session.commit()
-            print(f"DEBUG: Reunión {id} y sus datos asociados eliminados exitosamente")
+
             
             flash("Reunión eliminada exitosamente", "success")
             return redirect(url_for("reunion.list_reuniones"))

@@ -83,5 +83,5 @@ if __name__ == "__main__":
         db.create_all()
         create_default_users()  # Crear usuarios por defecto después de crear tablas
     port = int(os.environ.get('PORT', 5000))
-    debug_mode = app.config.get("DEBUG", False)
-    app.run(host='0.0.0.0', port=port, debug=debug_mode)
+    # Siempre desactivar debug en producción
+    app.run(host='0.0.0.0', port=port, debug=False)

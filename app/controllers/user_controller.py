@@ -150,7 +150,7 @@ def profile(id):
 def get_dueno_asistencias(dueno_id):
     """Obtiene las asistencias de un dueño para el modal"""
     try:
-        print(f"DEBUG: Iniciando búsqueda de asistencias para dueño {dueno_id}")
+
         
         # Primero verificar que el dueño existe
         dueno = Duenio.query.get(dueno_id)
@@ -158,15 +158,15 @@ def get_dueno_asistencias(dueno_id):
             print(f"ERROR: Dueño {dueno_id} no encontrado")
             return jsonify({'success': False, 'error': f'Dueño {dueno_id} no encontrado'}), 404
         
-        print(f"DEBUG: Dueño encontrado: {dueno.nombre}")
+
         
         # Buscar asistencias
         asistencias = Asistencia.query.filter_by(duenio_id=dueno_id).all()
-        print(f"DEBUG: Encontradas {len(asistencias)} asistencias")
+
         
         # Buscar multas por asistencia para este dueño
         multas_asistencia = Multa.query.filter_by(duenio_id=dueno_id, tipo='asistencia').all()
-        print(f"DEBUG: Encontradas {len(multas_asistencia)} multas de asistencia")
+
         
         # Crear diccionario de multas por reunión
         multas_por_reunion = {}
@@ -175,7 +175,7 @@ def get_dueno_asistencias(dueno_id):
         
         data = []
         for i, asistencia in enumerate(asistencias):
-            print(f"DEBUG: Procesando asistencia {i+1}")
+
             try:
                 # Verificar que la relación reunion existe
                 if not asistencia.reunion:
@@ -192,7 +192,7 @@ def get_dueno_asistencias(dueno_id):
                 multa_monto = 0
                 if not asistencia.asistio and asistencia.id_reunion in multas_por_reunion:
                     multa_monto = multas_por_reunion[asistencia.id_reunion]
-                    print(f"DEBUG: Multa encontrada para asistencia {i+1}: {multa_monto}")
+
                 
                 asistencia_data = {
                     'reunion': reunion_data,
@@ -201,7 +201,7 @@ def get_dueno_asistencias(dueno_id):
                     'observaciones': 'Sin observaciones'
                 }
                 data.append(asistencia_data)
-                print(f"DEBUG: Asistencia {i+1} procesada correctamente")
+
                 
             except Exception as e:
                 print(f"ERROR al procesar asistencia {i+1}: {str(e)}")
@@ -216,7 +216,7 @@ def get_dueno_asistencias(dueno_id):
             'asistencias': data
         }
         
-        print(f"DEBUG: Enviando respuesta con {len(data)} asistencias")
+
         return jsonify(result)
         
     except Exception as e:
@@ -229,16 +229,16 @@ def get_dueno_asistencias(dueno_id):
 def get_dueno_terrenos(dueno_id):
     """Obtiene los terrenos de un dueño para el modal"""
     try:
-        print(f"DEBUG: Iniciando búsqueda de terrenos para dueño {dueno_id}")
+
         
         dueno = Duenio.query.get(dueno_id)
         if not dueno:
             return jsonify({'success': False, 'error': f'Dueño {dueno_id} no encontrado'}), 404
         
-        print(f"DEBUG: Dueño encontrado: {dueno.nombre}")
+
         
         terrenos = Terreno.query.filter_by(duenio_id=dueno_id).all()
-        print(f"DEBUG: Encontrados {len(terrenos)} terrenos")
+
         
         data = []
         for terreno in terrenos:
@@ -267,17 +267,17 @@ def get_dueno_terrenos(dueno_id):
 def get_dueno_cuotas(dueno_id):
     """Obtiene las cuotas de un dueño para el modal"""
     try:
-        print(f"DEBUG: Iniciando búsqueda de cuotas para dueño {dueno_id}")
+
         
         dueno = Duenio.query.get(dueno_id)
         if not dueno:
             return jsonify({'success': False, 'error': f'Dueño {dueno_id} no encontrado'}), 404
         
-        print(f"DEBUG: Dueño encontrado: {dueno.nombre}")
+
         
         # Buscar cuotas a través de terrenos
         cuotas = Cuota.query.join(Terreno).filter(Terreno.duenio_id == dueno_id).all()
-        print(f"DEBUG: Encontradas {len(cuotas)} cuotas")
+
         
         data = []
         for cuota in cuotas:

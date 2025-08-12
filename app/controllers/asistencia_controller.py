@@ -18,7 +18,7 @@ asistencia_bp = Blueprint("asistencia", __name__)
 def list_asistencias():
     # Obtener parámetros de búsqueda y paginación
     page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 10, type=int)  # 10 registros por página por defecto
+    per_page = request.args.get('per_page', 20, type=int)  # 20 registros por página por defecto
     search = request.args.get('search', '', type=str)
     
     # Construir la consulta base con joins para búsqueda
@@ -33,7 +33,6 @@ def list_asistencias():
                 Duenio.paterno.ilike(search_filter),
                 Duenio.materno.ilike(search_filter),
                 Duenio.ci.ilike(search_filter),
-                Reunion.titulo.ilike(search_filter),
                 Reunion.descripcion.ilike(search_filter)
             )
         )

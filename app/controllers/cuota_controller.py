@@ -16,7 +16,6 @@ cuota_bp = Blueprint("cuota", __name__)
 @login_required
 def list_cuotas():
     cuotas = Cuota.get_all()
-    print(f"DEBUG: Total cuotas encontradas: {len(cuotas)}")
     
     # Agrupar cuotas por tipo/título (esto es lo que realmente queremos mostrar)
     cuotas_por_tipo = {}
@@ -62,9 +61,6 @@ def list_cuotas():
     for titulo in cuotas_por_tipo:
         cuotas_por_tipo[titulo]['propietarios_afectados'] = list(cuotas_por_tipo[titulo]['propietarios_afectados'])
         cuotas_por_tipo[titulo]['num_propietarios'] = len(cuotas_por_tipo[titulo]['propietarios_afectados'])
-    
-    print(f"DEBUG: Tipos de cuotas encontrados: {list(cuotas_por_tipo.keys())}")
-    print(f"DEBUG: Total tipos únicos: {len(cuotas_por_tipo)}")
     
     return cuota_view.list_cuotas(cuotas, cuotas_por_tipo)
 
